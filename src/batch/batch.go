@@ -1,6 +1,8 @@
 package batch
 
-import "github.com/zikwall/clickhouse-buffer/src/clickhouse"
+import (
+	"github.com/zikwall/clickhouse-buffer/src/api"
+)
 
 type Scalar interface {
 	Vector() []interface{}
@@ -10,7 +12,7 @@ type Vector []interface{}
 
 // Batch holds information for sending rows batch
 type Batch struct {
-	view    clickhouse.View
+	view    api.View
 	vectors []Vector
 }
 
@@ -21,7 +23,7 @@ func NewBatch(vectors []Vector) *Batch {
 	}
 }
 
-func (b *Batch) View() clickhouse.View {
+func (b *Batch) View() api.View {
 	return b.view
 }
 

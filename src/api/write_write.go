@@ -5,7 +5,7 @@ import "time"
 // Errors returns a channel for reading errors which occurs during async writes.
 // Must be called before performing any writes for errors to be collected.
 // The chan is unbuffered and must be drained or the writer will block.
-func (w *WriterImpl) Errors() <-chan error {
+func (w *writerImpl) Errors() <-chan error {
 	if w.errCh == nil {
 		w.errCh = make(chan error)
 	}
@@ -13,19 +13,19 @@ func (w *WriterImpl) Errors() <-chan error {
 }
 
 // Flush forces all pending writes from the buffer to be sent
-func (w *WriterImpl) Flush() {
+func (w *writerImpl) Flush() {
 	w.bufferFlush <- struct{}{}
 	w.awaitFlushing()
 }
 
-func (w *WriterImpl) awaitFlushing() {
+func (w *writerImpl) awaitFlushing() {
 	// waiting buffer is flushed
 	<-time.After(time.Millisecond)
 }
 
 // Close finishes outstanding write operations,
 // stop background routines and closes all channels
-func (w *WriterImpl) Close() {
+func (w *writerImpl) Close() {
 	if w.writeCh != nil {
 		// Flush outstanding metrics
 		w.Flush()

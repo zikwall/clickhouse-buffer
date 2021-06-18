@@ -3,8 +3,6 @@ package api
 import (
 	"context"
 	"github.com/zikwall/clickhouse-buffer/src/batch"
-	"github.com/zikwall/clickhouse-buffer/src/clickhouse"
-	"github.com/zikwall/clickhouse-buffer/src/internal"
 	"time"
 )
 
@@ -13,17 +11,17 @@ import (
 // When using multiple goroutines for writing, use a single WriteAPI instance in all goroutines.
 type Writer interface {
 	// WriteVector writes asynchronously line protocol record into bucket.
-	WriteVector(vector batch.Vector)
+	WriteVector(vector batch.Scalar)
 	// Flush forces all pending writes from the buffer to be sent
 	Flush()
 	// Errors returns a channel for reading errors which occurs during async writes.
 	Errors() <-chan error
 }
 
-type WriterImpl struct {
+type writerImpl struct {
 	context      context.Context
-	view         clickhouse.View
-	streamer     internal.BufferStreamingWriter
+	view         View
+	streamer     Client
 	writeBuffer  []batch.Vector
 	writeCh      chan *batch.Batch
 	errCh        chan error
@@ -35,9 +33,9 @@ type WriterImpl struct {
 	writeOptions *Options
 }
 
-// NewWrite returns new non-blocking write client for writing rows to Clickhouse table
-func NewWrite(view clickhouse.View, writeOptions *Options) *WriterImpl {
-	w := &WriterImpl{
+// NewWriter returns new non-blocking write client for writing rows to Clickhouse table
+func NewWriter(view View, writeOptions *Options) *writerImpl {
+	w := &writerImpl{
 		writeBuffer:  make([]batch.Vector, 0, writeOptions.BatchSize()+1),
 		writeCh:      make(chan *batch.Batch),
 		bufferCh:     make(chan batch.Vector),
@@ -46,6 +44,7 @@ func NewWrite(view clickhouse.View, writeOptions *Options) *WriterImpl {
 		bufferFlush:  make(chan struct{}),
 		doneCh:       make(chan struct{}),
 		writeOptions: writeOptions,
+		view:         view,
 	}
 
 	go w.listenBufferWrite()
@@ -56,18 +55,18 @@ func NewWrite(view clickhouse.View, writeOptions *Options) *WriterImpl {
 
 // WriteVector writes asynchronously line protocol record into bucket.
 // WriteVector adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *WriterImpl) WriteVector(scalar batch.Scalar) {
+func (w *writerImpl) WriteVector(scalar batch.Scalar) {
 	w.bufferCh <- scalar.Vector()
 }
 
-func (w *WriterImpl) flushBuffer() {
+func (w *writerImpl) flushBuffer() {
 	if len(w.writeBuffer) > 0 {
 		w.writeCh <- batch.NewBatch(w.writeBuffer)
 		w.writeBuffer = w.writeBuffer[:0]
 	}
 }
 
-func (w *WriterImpl) listenBufferWrite() {
+func (w *writerImpl) listenBufferWrite() {
 	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
 
 	defer func() {
@@ -94,7 +93,7 @@ func (w *WriterImpl) listenBufferWrite() {
 	}
 }
 
-func (w *WriterImpl) listenStreamWrite() {
+func (w *writerImpl) listenStreamWrite() {
 	defer func() {
 		w.doneCh <- struct{}{}
 	}()
@@ -102,7 +101,7 @@ func (w *WriterImpl) listenStreamWrite() {
 	for {
 		select {
 		case btc := <-w.writeCh:
-			err := w.streamer.HandleStream(w.context, btc)
+			err := w.streamer.HandleStream(btc)
 			if err != nil && w.errCh != nil {
 				w.errCh <- err
 			}
