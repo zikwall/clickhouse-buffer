@@ -1,22 +1,24 @@
 package buffer
 
-import "github.com/zikwall/clickhouse-buffer/src/api"
+import (
+	"github.com/zikwall/clickhouse-buffer/src/common"
+)
 
 type InMemoryBuffer struct {
-	writeBuffer []api.Vector
+	writeBuffer []common.Vector
 }
 
-func NewInmemoryBuffer(bufferSize int) *InMemoryBuffer {
+func NewInmemoryBuffer(bufferSize uint) *InMemoryBuffer {
 	return &InMemoryBuffer{
-		writeBuffer: make([]api.Vector, 0, bufferSize+1),
+		writeBuffer: make([]common.Vector, 0, bufferSize+1),
 	}
 }
 
-func (in *InMemoryBuffer) Write(vector api.Vector) {
+func (in *InMemoryBuffer) Write(vector common.Vector) {
 	in.writeBuffer = append(in.writeBuffer, vector)
 }
 
-func (in *InMemoryBuffer) Buffer() []api.Vector {
+func (in *InMemoryBuffer) Buffer() []common.Vector {
 	return in.writeBuffer
 }
 

@@ -31,6 +31,10 @@ func NewClientWithOptions(ctx context.Context, options *api.Options) api.Client 
 	return client
 }
 
+func (cs *clientImpl) Options() *api.Options {
+	return cs.options
+}
+
 func (cs *clientImpl) Writer(view api.View, buffer buffer.Buffer) api.Writer {
 	key := view.Name
 	cs.mu.Lock()

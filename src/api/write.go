@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/src/common"
 	"time"
 )
 
@@ -11,7 +12,7 @@ import (
 // When using multiple goroutines for writing, use a single WriteAPI instance in all goroutines.
 type Writer interface {
 	// WriteVector writes asynchronously line protocol record into bucket.
-	WriteVector(vector Scalar)
+	WriteVector(vector common.Scalar)
 	// Flush forces all pending writes from the buffer to be sent
 	Flush()
 	// Errors returns a channel for reading errors which occurs during async writes.
@@ -25,7 +26,7 @@ type WriterImpl struct {
 	writeBuffer  buffer.Buffer
 	writeCh      chan *Batch
 	errCh        chan error
-	bufferCh     chan Vector
+	bufferCh     chan common.Vector
 	bufferFlush  chan struct{}
 	doneCh       chan struct{}
 	writeOptions *Options
@@ -36,7 +37,7 @@ func NewWriter(context context.Context, view View, buffer buffer.Buffer, writeOp
 	w := &WriterImpl{
 		writeBuffer:  buffer,
 		writeCh:      make(chan *Batch),
-		bufferCh:     make(chan Vector),
+		bufferCh:     make(chan common.Vector),
 		bufferFlush:  make(chan struct{}),
 		doneCh:       make(chan struct{}),
 		writeOptions: writeOptions,
@@ -52,7 +53,7 @@ func NewWriter(context context.Context, view View, buffer buffer.Buffer, writeOp
 
 // WriteVector writes asynchronously line protocol record into bucket.
 // WriteVector adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *WriterImpl) WriteVector(scalar Scalar) {
+func (w *WriterImpl) WriteVector(scalar common.Scalar) {
 	w.bufferCh <- scalar.Vector()
 }
 

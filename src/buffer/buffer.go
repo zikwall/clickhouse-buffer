@@ -1,10 +1,12 @@
 package buffer
 
-import "github.com/zikwall/clickhouse-buffer/src/api"
+import (
+	"github.com/zikwall/clickhouse-buffer/src/common"
+)
 
 type Buffer interface {
-	Write(vector api.Vector)
-	Buffer() []api.Vector
+	Write(vector common.Vector)
+	Buffer() []common.Vector
 	Len() int
 	Flush()
 }
