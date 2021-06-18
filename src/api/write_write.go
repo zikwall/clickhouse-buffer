@@ -30,15 +30,13 @@ func (w *WriterImpl) Close() {
 		// Flush outstanding metrics
 		w.Flush()
 
-		// stop and wait for buffer proc
-		close(w.bufferStop)
+		// stop and wait for write buffer
 		<-w.doneCh
 
 		close(w.bufferFlush)
 		close(w.bufferCh)
 
-		// stop and wait for write proc
-		close(w.writeStop)
+		// stop and wait for write clickhouse
 		<-w.doneCh
 
 		close(w.writeCh)
