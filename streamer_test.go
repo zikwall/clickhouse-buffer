@@ -2,6 +2,7 @@ package clickhouse_buffer
 
 import (
 	"context"
+	"fmt"
 	"github.com/zikwall/clickhouse-buffer/src/api"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/src/common"
@@ -11,8 +12,14 @@ import (
 
 type ClickhouseImplMock struct{}
 
-func (ch *ClickhouseImplMock) Insert(ctx context.Context, view api.View, rows []common.Vector) error {
-	return nil
+func (ch *ClickhouseImplMock) Insert(ctx context.Context, view api.View, rows []common.Vector) (uint64, error) {
+	return 0, nil
+}
+
+type ClickhouseImplErrMock struct{}
+
+func (ch *ClickhouseImplErrMock) Insert(ctx context.Context, view api.View, rows []common.Vector) (uint64, error) {
+	return 0, fmt.Errorf("test error")
 }
 
 type VectorMock struct {
@@ -38,7 +45,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 			cancel()
 		}()
 
-		client := NewClient(ctx)
+		client := NewClient(ctx, &ClickhouseImplMock{})
 		client.Options().SetFlushInterval(500)
 		memoryBuffer := buffer.NewInmemoryBuffer(
 			client.Options().BatchSize(),

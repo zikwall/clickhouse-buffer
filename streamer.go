@@ -17,14 +17,15 @@ type clientImpl struct {
 	mu         sync.RWMutex
 }
 
-func NewClient(context context.Context) api.Client {
-	return NewClientWithOptions(context, api.DefaultOptions())
+func NewClient(context context.Context, clickhouse api.Clickhouse) api.Client {
+	return NewClientWithOptions(context, clickhouse, api.DefaultOptions())
 }
 
-func NewClientWithOptions(ctx context.Context, options *api.Options) api.Client {
+func NewClientWithOptions(ctx context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
 	client := &clientImpl{
-		options:   options,
-		writeAPIs: map[string]api.Writer{},
+		clickhouse: clickhouse,
+		options:    options,
+		writeAPIs:  map[string]api.Writer{},
 	}
 	client.context, client.cancel = context.WithCancel(ctx)
 
