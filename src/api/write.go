@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"time"
 )
 
@@ -21,7 +22,7 @@ type WriterImpl struct {
 	context      context.Context
 	view         View
 	streamer     Client
-	writeBuffer  []Vector
+	writeBuffer  buffer.Buffer
 	writeCh      chan *Batch
 	errCh        chan error
 	bufferCh     chan Vector
@@ -31,9 +32,9 @@ type WriterImpl struct {
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(context context.Context, view View, writeOptions *Options) *WriterImpl {
+func NewWriter(context context.Context, view View, buffer buffer.Buffer, writeOptions *Options) *WriterImpl {
 	w := &WriterImpl{
-		writeBuffer:  make([]Vector, 0, writeOptions.BatchSize()+1),
+		writeBuffer:  buffer,
 		writeCh:      make(chan *Batch),
 		bufferCh:     make(chan Vector),
 		bufferFlush:  make(chan struct{}),
@@ -56,9 +57,9 @@ func (w *WriterImpl) WriteVector(scalar Scalar) {
 }
 
 func (w *WriterImpl) flushBuffer() {
-	if len(w.writeBuffer) > 0 {
-		w.writeCh <- NewBatch(w.writeBuffer)
-		w.writeBuffer = w.writeBuffer[:0]
+	if w.writeBuffer.Len() > 0 {
+		w.writeCh <- NewBatch(w.writeBuffer.Buffer())
+		w.writeBuffer.Flush()
 	}
 }
 
@@ -73,8 +74,8 @@ func (w *WriterImpl) listenBufferWrite() {
 	for {
 		select {
 		case vector := <-w.bufferCh:
-			w.writeBuffer = append(w.writeBuffer, vector)
-			if len(w.writeBuffer) == int(w.writeOptions.BatchSize()) {
+			w.writeBuffer.Write(vector)
+			if w.writeBuffer.Len() == int(w.writeOptions.BatchSize()) {
 				w.flushBuffer()
 			}
 		case <-w.context.Done():
