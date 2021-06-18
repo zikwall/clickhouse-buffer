@@ -18,7 +18,7 @@ type Writer interface {
 	Errors() <-chan error
 }
 
-type writerImpl struct {
+type WriterImpl struct {
 	context      context.Context
 	view         View
 	streamer     Client
@@ -34,8 +34,8 @@ type writerImpl struct {
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(view View, writeOptions *Options) *writerImpl {
-	w := &writerImpl{
+func NewWriter(view View, writeOptions *Options) *WriterImpl {
+	w := &WriterImpl{
 		writeBuffer:  make([]batch.Vector, 0, writeOptions.BatchSize()+1),
 		writeCh:      make(chan *batch.Batch),
 		bufferCh:     make(chan batch.Vector),
@@ -55,18 +55,18 @@ func NewWriter(view View, writeOptions *Options) *writerImpl {
 
 // WriteVector writes asynchronously line protocol record into bucket.
 // WriteVector adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *writerImpl) WriteVector(scalar batch.Scalar) {
+func (w *WriterImpl) WriteVector(scalar batch.Scalar) {
 	w.bufferCh <- scalar.Vector()
 }
 
-func (w *writerImpl) flushBuffer() {
+func (w *WriterImpl) flushBuffer() {
 	if len(w.writeBuffer) > 0 {
 		w.writeCh <- batch.NewBatch(w.writeBuffer)
 		w.writeBuffer = w.writeBuffer[:0]
 	}
 }
 
-func (w *writerImpl) listenBufferWrite() {
+func (w *WriterImpl) listenBufferWrite() {
 	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
 
 	defer func() {
@@ -93,7 +93,7 @@ func (w *writerImpl) listenBufferWrite() {
 	}
 }
 
-func (w *writerImpl) listenStreamWrite() {
+func (w *WriterImpl) listenStreamWrite() {
 	defer func() {
 		w.doneCh <- struct{}{}
 	}()
