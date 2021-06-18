@@ -3,6 +3,7 @@ package clickhouse_buffer
 import (
 	"context"
 	"github.com/zikwall/clickhouse-buffer/src/api"
+	"log"
 	"sync"
 )
 
@@ -69,7 +70,7 @@ func (cs *clientImpl) HandleStream(btc *api.Batch) error {
 
 		err := cs.writeBatch(cs.context, btc)
 		if err != nil {
-
+			log.Fatalln(err)
 		}
 	}
 }
