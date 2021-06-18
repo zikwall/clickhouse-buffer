@@ -61,18 +61,15 @@ func (cs *clientImpl) Close() {
 }
 
 func (cs *clientImpl) HandleStream(btc *api.Batch) error {
-	for {
-		select {
-		case <-cs.context.Done():
-			return nil
-		default:
-		}
-
-		err := cs.writeBatch(cs.context, btc)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	err := cs.writeBatch(cs.context, btc)
+	if err != nil {
+		// In the future, you need to add the possibility of repeating failed packets,
+		// with limits and repetition intervals
+		log.Fatalln(err)
+		return err
 	}
+
+	return nil
 }
 
 func (cs *clientImpl) writeBatch(context context.Context, btc *api.Batch) error {
