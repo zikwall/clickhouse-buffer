@@ -32,18 +32,28 @@ func NewClientWithOptions(context context.Context, options *api.Options) api.Cli
 func (cs *clientImpl) Writer(view api.View) api.Writer {
 	key := view.Name
 	cs.mu.Lock()
-	cs.writeAPIs[key] = api.NewWriter(view, cs.options)
+	if _, ok := cs.writeAPIs[key]; !ok {
+		cs.writeAPIs[key] = api.NewWriter(view, cs.options)
+	}
+	writer := cs.writeAPIs[key]
 	cs.mu.Unlock()
 
-	return cs.writeAPIs[key]
+	return writer
 }
 
 func (cs *clientImpl) Close() {
-	for key, w := range cs.writeAPIs {
+	cs.mu.RLock()
+	apisSnapshot := cs.writeAPIs
+	cs.mu.RUnlock()
+
+	for key, w := range apisSnapshot {
 		if wa, ok := w.(*api.WriterImpl); ok {
 			wa.Close()
 		}
+
+		cs.mu.Lock()
 		delete(cs.writeAPIs, key)
+		cs.mu.Unlock()
 	}
 }
 
