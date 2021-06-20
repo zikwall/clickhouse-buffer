@@ -113,3 +113,14 @@ writeAPI.WriteVector(MyVector{
     id: 1, uuid: "1", insertTs: time.Now(),
 })
 ```
+
+When using a non-blocking record, you can track errors through a special error channel
+
+```go
+errorsCh := writeAPI.Errors()
+go func() {
+	for err := range errorsCh {
+		log.Warning(fmt.Sprintf("clickhouse write error: %s", err.Error()))
+	}
+}()
+```
