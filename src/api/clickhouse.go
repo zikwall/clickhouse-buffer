@@ -25,7 +25,7 @@ type clickhouseImpl struct {
 	insertTimeout uint
 }
 
-type Cfg struct {
+type ClickhouseCfg struct {
 	Address  string
 	Password string
 	User     string
@@ -34,7 +34,7 @@ type Cfg struct {
 	IsDebug  bool
 }
 
-func NewClickhouseWithOptions(cfg Cfg) (*clickhouseImpl, error) {
+func NewClickhouseWithOptions(cfg ClickhouseCfg) (*clickhouseImpl, error) {
 	connectionPool, err := sqlx.Open("clickhouse", buildConnectionString(cfg))
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func insertQuery(table string, cols []string) string {
 	return prepared
 }
 
-func buildConnectionString(cfg Cfg) string {
+func buildConnectionString(cfg ClickhouseCfg) string {
 	debug := "false"
 
 	if cfg.IsDebug {
