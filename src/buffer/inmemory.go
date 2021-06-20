@@ -18,7 +18,7 @@ func (in *InMemoryBuffer) Write(vector common.Vector) {
 	in.writeBuffer = append(in.writeBuffer, vector)
 }
 
-func (in *InMemoryBuffer) Buffer() []common.Vector {
+func (in *InMemoryBuffer) Read() []common.Vector {
 	return in.writeBuffer
 }
 

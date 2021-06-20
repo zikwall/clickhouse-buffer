@@ -6,7 +6,7 @@ import (
 
 type Buffer interface {
 	Write(vector common.Vector)
-	Buffer() []common.Vector
+	Read() []common.Vector
 	Len() int
 	Flush()
 }

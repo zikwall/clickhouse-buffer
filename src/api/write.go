@@ -61,7 +61,7 @@ func (w *WriterImpl) WriteVector(scalar common.Scalar) {
 
 func (w *WriterImpl) flushBuffer() {
 	if w.writeBuffer.Len() > 0 {
-		w.writeCh <- NewBatch(w.writeBuffer.Buffer())
+		w.writeCh <- NewBatch(w.writeBuffer.Read())
 		w.writeBuffer.Flush()
 	}
 }
