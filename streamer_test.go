@@ -46,7 +46,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
-			api.DefaultOptions().SetFlushInterval(500),
+			api.DefaultOptions().SetFlushInterval(200).SetBatchSize(3),
 		)
 
 		defer client.Close()
