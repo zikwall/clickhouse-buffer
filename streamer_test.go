@@ -23,48 +23,93 @@ func (ch *ClickhouseImplErrMock) Insert(ctx context.Context, view api.View, rows
 }
 
 type VectorMock struct {
-	a int
-	b string
-	c time.Time
+	id       int
+	uuid     string
+	insertTs time.Time
 }
 
 func (vm VectorMock) Vector() common.Vector {
-	return common.Vector{vm.a, vm.b, vm.c}
+	return common.Vector{vm.id, vm.uuid, vm.insertTs}
 }
 
 func TestClientImpl_HandleStream(t *testing.T) {
 	tableView := api.View{
-		Name:    "test_table",
-		Columns: []string{"one", "to", "three"},
+		Name:    "test_db.test_table",
+		Columns: []string{"id", "uuid", "insertTs"},
 	}
 
-	t.Run("it should be correct flush send and data", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-		defer func() {
-			cancel()
-		}()
+	defer func() {
+		cancel()
+	}()
 
-		client := NewClient(ctx, &ClickhouseImplMock{})
-		client.Options().SetFlushInterval(500)
+	t.Run("it should be correct send and flush data", func(t *testing.T) {
+		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
+			api.DefaultOptions().SetFlushInterval(500),
+		)
+
+		defer client.Close()
+
 		memoryBuffer := buffer.NewInmemoryBuffer(
 			client.Options().BatchSize(),
 		)
+
+		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI.WriteVector(VectorMock{
+			id: 1, uuid: "1", insertTs: time.Now(),
+		})
+		writeAPI.WriteVector(VectorMock{
+			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
+		})
+		writeAPI.WriteVector(VectorMock{
+			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
+		})
+
+		<-time.After(time.Millisecond * 550)
+
+		if memoryBuffer.Len() != 0 {
+			t.Fatal("Failed, the buffer was expected to be cleared")
+		}
+	})
+
+	t.Run("it should be successfully received three errors about writing", func(t *testing.T) {
+		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
+			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+		)
+
+		defer client.Close()
+
+		memoryBuffer := buffer.NewInmemoryBuffer(
+			client.Options().BatchSize(),
+		)
+
 		writeAPI := client.Writer(tableView, memoryBuffer)
 
-		writeAPI.WriteVector(VectorMock{
-			a: 1, b: "2", c: time.Now(),
-		})
+		var errors []error
+		errorsCh := writeAPI.Errors()
+		// Create go proc for reading and storing errors
+		go func() {
+			for err := range errorsCh {
+				errors = append(errors, err)
+			}
+		}()
 
 		writeAPI.WriteVector(VectorMock{
-			a: 1, b: "2", c: time.Now().Add(time.Second),
+			id: 1, uuid: "1", insertTs: time.Now(),
 		})
-
 		writeAPI.WriteVector(VectorMock{
-			a: 1, b: "2", c: time.Now().Add(time.Second * 2),
+			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
+		})
+		writeAPI.WriteVector(VectorMock{
+			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
 		})
 
-		<-time.After(time.Second * 1)
+		<-time.After(time.Millisecond * 50)
+
+		if len(errors) != 3 {
+			t.Fatalf("Failed, expected to get three errors, received %d", len(errors))
+		}
 
 		if memoryBuffer.Len() != 0 {
 			t.Fatal("Failed, the buffer was expected to be cleared")
