@@ -1,3 +1,6 @@
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/build_and_tests/badge.svg)](https://github.com/zikwall/clickhouse-buffer/actions)
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/golangci_lint/badge.svg)](https://github.com/zikwall/clickhouse-buffer/actions)
+
 # clickhouse-buffer
 Buffer for streaming data to ClickHouse
 
