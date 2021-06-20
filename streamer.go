@@ -10,7 +10,6 @@ import (
 
 type clientImpl struct {
 	context    context.Context
-	cancel     context.CancelFunc
 	clickhouse api.Clickhouse
 	options    *api.Options
 	writeAPIs  map[string]api.Writer
@@ -21,13 +20,13 @@ func NewClient(context context.Context, clickhouse api.Clickhouse) api.Client {
 	return NewClientWithOptions(context, clickhouse, api.DefaultOptions())
 }
 
-func NewClientWithOptions(ctx context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
+func NewClientWithOptions(context context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
 	client := &clientImpl{
+		context:    context,
 		clickhouse: clickhouse,
 		options:    options,
 		writeAPIs:  map[string]api.Writer{},
 	}
-	client.context, client.cancel = context.WithCancel(ctx)
 
 	return client
 }
@@ -40,7 +39,7 @@ func (cs *clientImpl) Writer(view api.View, buffer buffer.Buffer) api.Writer {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.writeAPIs[key]; !ok {
-		cs.writeAPIs[key] = api.NewWriter(cs.context, view, buffer, cs.options)
+		cs.writeAPIs[key] = api.NewWriter(cs, view, buffer, cs.options)
 	}
 	writer := cs.writeAPIs[key]
 	cs.mu.Unlock()
@@ -49,8 +48,6 @@ func (cs *clientImpl) Writer(view api.View, buffer buffer.Buffer) api.Writer {
 }
 
 func (cs *clientImpl) Close() {
-	cs.cancel()
-
 	cs.mu.RLock()
 	apisSnapshot := cs.writeAPIs
 	cs.mu.RUnlock()
@@ -71,7 +68,7 @@ func (cs *clientImpl) HandleStream(btc *api.Batch) error {
 	if err != nil {
 		// In the future, you need to add the possibility of repeating failed packets,
 		// with limits and repetition intervals
-		log.Fatalln(err)
+		log.Println(err)
 		return err
 	}
 

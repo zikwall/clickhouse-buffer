@@ -1,6 +1,8 @@
 package api
 
-import "time"
+import (
+	"time"
+)
 
 // Errors returns a channel for reading errors which occurs during async writes.
 // Must be called before performing any writes for errors to be collected.
@@ -31,12 +33,14 @@ func (w *WriterImpl) Close() {
 		w.Flush()
 
 		// stop and wait for write buffer
+		close(w.bufferStop)
 		<-w.doneCh
 
 		close(w.bufferFlush)
 		close(w.bufferCh)
 
 		// stop and wait for write clickhouse
+		close(w.writeStop)
 		<-w.doneCh
 
 		close(w.writeCh)

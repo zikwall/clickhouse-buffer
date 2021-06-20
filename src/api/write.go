@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/src/common"
 	"time"
@@ -20,7 +19,6 @@ type Writer interface {
 }
 
 type WriterImpl struct {
-	context      context.Context
 	view         View
 	streamer     Client
 	writeBuffer  buffer.Buffer
@@ -29,20 +27,24 @@ type WriterImpl struct {
 	bufferCh     chan common.Vector
 	bufferFlush  chan struct{}
 	doneCh       chan struct{}
+	writeStop    chan struct{}
+	bufferStop   chan struct{}
 	writeOptions *Options
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(context context.Context, view View, buffer buffer.Buffer, writeOptions *Options) *WriterImpl {
+func NewWriter(client Client, view View, buffer buffer.Buffer, writeOptions *Options) *WriterImpl {
 	w := &WriterImpl{
+		view:         view,
+		streamer:     client,
 		writeBuffer:  buffer,
+		writeOptions: writeOptions,
 		writeCh:      make(chan *Batch),
 		bufferCh:     make(chan common.Vector),
 		bufferFlush:  make(chan struct{}),
 		doneCh:       make(chan struct{}),
-		writeOptions: writeOptions,
-		view:         view,
-		context:      context,
+		bufferStop:   make(chan struct{}),
+		writeStop:    make(chan struct{}),
 	}
 
 	go w.listenBufferWrite()
@@ -67,11 +69,6 @@ func (w *WriterImpl) flushBuffer() {
 func (w *WriterImpl) listenBufferWrite() {
 	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
 
-	defer func() {
-		w.doneCh <- struct{}{}
-		ticker.Stop()
-	}()
-
 	for {
 		select {
 		case vector := <-w.bufferCh:
@@ -79,8 +76,10 @@ func (w *WriterImpl) listenBufferWrite() {
 			if w.writeBuffer.Len() == int(w.writeOptions.BatchSize()) {
 				w.flushBuffer()
 			}
-		case <-w.context.Done():
+		case <-w.bufferStop:
 			w.flushBuffer()
+			w.doneCh <- struct{}{}
+			ticker.Stop()
 			return
 		case <-ticker.C:
 			w.flushBuffer()
@@ -91,10 +90,6 @@ func (w *WriterImpl) listenBufferWrite() {
 }
 
 func (w *WriterImpl) listenStreamWrite() {
-	defer func() {
-		w.doneCh <- struct{}{}
-	}()
-
 	for {
 		select {
 		case btc := <-w.writeCh:
@@ -102,7 +97,8 @@ func (w *WriterImpl) listenStreamWrite() {
 			if err != nil && w.errCh != nil {
 				w.errCh <- err
 			}
-		case <-w.context.Done():
+		case <-w.writeStop:
+			w.doneCh <- struct{}{}
 			return
 		}
 	}
