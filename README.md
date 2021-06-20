@@ -1,6 +1,16 @@
 # clickhouse-buffer
 Buffer for streaming data to ClickHouse
 
+## Why and why
+
+In the practice of using the Clickhouse database (in real projects), 
+you often have to resort to creating your own ~~bicycles~~ in the form of queues 
+and testers that accumulate the necessary amount of data or for a certain period of time 
+and send one large data package to the Clickhouse database.
+
+This is due to the fact that Clickhouse is designed so that it better processes new data in batches 
+(and this is recommended by the authors themselves).
+
 ## Features
 
 #### Client offers two ways of writing: 
