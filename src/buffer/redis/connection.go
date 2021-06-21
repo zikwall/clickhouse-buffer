@@ -28,6 +28,6 @@ func NewRedisBuffer(ctx context.Context, rdb *redis.Client, bucket string, buffe
 	}, nil
 }
 
-func (rb *RedisBuffer) isShutdownClosedError(err error) bool {
+func (rb *RedisBuffer) isContextClosedErr(err error) bool {
 	return errors.Is(err, redis.ErrClosed) && rb.context.Err() != nil && rb.context.Err() == context.Canceled
 }
