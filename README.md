@@ -19,7 +19,7 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 #### Client offers two ways of writing: 
 
 - [x] non-blocking 
-- [ ] blocking.
+- [x] blocking.
 
 Non-blocking write client uses implicit batching. 
 Data are asynchronously written to the underlying buffer and they are automatically sent to a server 
@@ -132,4 +132,22 @@ go func() {
 		log.Warning(fmt.Sprintf("clickhouse write error: %s", err.Error()))
 	}
 }()
+```
+
+Using the blocking writer interface
+
+```go
+writerBlocking := client.WriterBlocking(tableView)
+
+err := writerBlocking.WriteRow(ctx, []types.Rower{
+    RowMock{
+        id: 1, uuid: "1", insertTs: time.Now(),
+    },
+    RowMock{
+        id: 2, uuid: "2", insertTs: time.Now(),
+    },
+    RowMock{
+        id: 3, uuid: "3", insertTs: time.Now(),
+    },
+}...)
 ```
