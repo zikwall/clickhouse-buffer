@@ -116,3 +116,68 @@ func TestClientImpl_HandleStream(t *testing.T) {
 		}
 	})
 }
+
+func TestClientImpl_WriteBatch(t *testing.T) {
+	tableView := api.View{
+		Name:    "test_db.test_table",
+		Columns: []string{"id", "uuid", "insert_ts"},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		cancel()
+	}()
+
+	t.Run("it should be correct send data", func(t *testing.T) {
+		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
+			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+		)
+
+		defer client.Close()
+
+		writerBlocking := client.WriterBlocking(tableView)
+
+		err := writerBlocking.WriteRow(ctx, []types.Rower{
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+		}...)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("it should be successfully received error about writing", func(t *testing.T) {
+		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
+			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+		)
+
+		defer client.Close()
+
+		writerBlocking := client.WriterBlocking(tableView)
+
+		err := writerBlocking.WriteRow(ctx, []types.Rower{
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+			RowMock{
+				id: 1, uuid: "1", insertTs: time.Now(),
+			},
+		}...)
+
+		if err == nil {
+			t.Fatal("Failed, expected to get write error, give nil")
+		}
+	})
+}
