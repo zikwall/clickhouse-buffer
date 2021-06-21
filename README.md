@@ -137,16 +137,19 @@ go func() {
 Using the blocking writer interface
 
 ```go
-writerBlocking := client.WriterBlocking(tableView)
+writerBlocking := client.WriterBlocking(api.View{
+    Name:    "clickhouse_database.clickhouse_table",
+    Columns: []string{"id", "uuid", "insert_ts"},
+})
 
 err := writerBlocking.WriteRow(ctx, []types.Rower{
-    RowMock{
+    MyRow{
         id: 1, uuid: "1", insertTs: time.Now(),
     },
-    RowMock{
+    MyRow{
         id: 2, uuid: "2", insertTs: time.Now(),
     },
-    RowMock{
+    MyRow{
         id: 3, uuid: "3", insertTs: time.Now(),
     },
 }...)
