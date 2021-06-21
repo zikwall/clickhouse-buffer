@@ -89,7 +89,7 @@ client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
 )
 ```
 
-You can implement your own data buffer interface or use an existing one. 
+You can implement your own data buffer interface: `File`, `Rabbitmq`, `CustomMemory`, etc. or use an existing one. 
 
 ```go
 type Buffer interface {
