@@ -12,13 +12,13 @@ import (
 
 type ClickhouseImplMock struct{}
 
-func (ch *ClickhouseImplMock) Insert(ctx context.Context, view api.View, rows []types.RowSlice) (uint64, error) {
+func (ch *ClickhouseImplMock) Insert(_ context.Context, _ api.View, _ []types.RowSlice) (uint64, error) {
 	return 0, nil
 }
 
 type ClickhouseImplErrMock struct{}
 
-func (ch *ClickhouseImplErrMock) Insert(ctx context.Context, view api.View, rows []types.RowSlice) (uint64, error) {
+func (ch *ClickhouseImplErrMock) Insert(_ context.Context, _ api.View, _ []types.RowSlice) (uint64, error) {
 	return 0, fmt.Errorf("test error")
 }
 
