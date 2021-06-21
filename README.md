@@ -39,7 +39,7 @@ In the future, it is necessary to implement an interface, and a mechanism for se
 with the ability to control the number of retries, the intervals between retries. 
 The "queue" data structure is a good fit for this.
 
-- [ ] im-memory queue
+- [ ] in-memory queue
 - [ ] redis queue
 
 ## Usage
