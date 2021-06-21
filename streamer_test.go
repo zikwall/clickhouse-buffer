@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zikwall/clickhouse-buffer/src/api"
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
 	"github.com/zikwall/clickhouse-buffer/src/types"
 	"testing"
 	"time"
@@ -51,7 +51,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 		defer client.Close()
 
-		memoryBuffer := buffer.NewInmemoryBuffer(
+		memoryBuffer := memory.NewInmemoryBuffer(
 			client.Options().BatchSize(),
 		)
 
@@ -80,7 +80,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 		defer client.Close()
 
-		memoryBuffer := buffer.NewInmemoryBuffer(
+		memoryBuffer := memory.NewInmemoryBuffer(
 			client.Options().BatchSize(),
 		)
 

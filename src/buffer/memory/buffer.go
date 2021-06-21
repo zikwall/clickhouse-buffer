@@ -1,4 +1,4 @@
-package buffer
+package memory
 
 import (
 	"github.com/zikwall/clickhouse-buffer/src/types"
