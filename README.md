@@ -100,12 +100,18 @@ type Buffer interface {
 }
 ```
 
-Only the in-memory buffer is currently available
+Only the in-memory and redis buffer is currently available
 
 ```go
 // use buffer implement interface
-bufferImpl := buffer.NewInmemoryBuffer(
+buffer := memory.NewInmemoryBuffer(
 	client.Options().BatchSize(),
+)
+```
+
+```go
+buffer := redis.NewRedisBuffer(
+	contetx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
 ```
 
@@ -115,7 +121,7 @@ Now we can write data to the necessary tables in an asynchronous, non-blocking w
 writeAPI := client.Writer(api.View{
     Name:    "clickhouse_database.clickhouse_table", 
     Columns: []string{"id", "uuid", "insert_ts"},
-}, memoryBuffer)
+}, buffer)
 
 // write your data
 writeAPI.WriteRow(MyRow{
