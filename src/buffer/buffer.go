@@ -1,12 +1,12 @@
 package buffer
 
 import (
-	"github.com/zikwall/clickhouse-buffer/src/common"
+	"github.com/zikwall/clickhouse-buffer/src/types"
 )
 
 type Buffer interface {
-	Write(vector common.Vector)
-	Read() []common.Vector
+	Write(types.RowSlice)
+	Read() []types.RowSlice
 	Len() int
 	Flush()
 }

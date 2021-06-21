@@ -76,6 +76,6 @@ func (cs *clientImpl) HandleStream(btc *api.Batch) error {
 }
 
 func (cs *clientImpl) writeBatch(context context.Context, btc *api.Batch) error {
-	_, err := cs.clickhouse.Insert(context, btc.View(), btc.Vectors())
+	_, err := cs.clickhouse.Insert(context, btc.View(), btc.Rows())
 	return err
 }

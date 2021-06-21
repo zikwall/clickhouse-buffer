@@ -5,37 +5,37 @@ import (
 	"fmt"
 	"github.com/zikwall/clickhouse-buffer/src/api"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/src/common"
+	"github.com/zikwall/clickhouse-buffer/src/types"
 	"testing"
 	"time"
 )
 
 type ClickhouseImplMock struct{}
 
-func (ch *ClickhouseImplMock) Insert(ctx context.Context, view api.View, rows []common.Vector) (uint64, error) {
+func (ch *ClickhouseImplMock) Insert(ctx context.Context, view api.View, rows []types.RowSlice) (uint64, error) {
 	return 0, nil
 }
 
 type ClickhouseImplErrMock struct{}
 
-func (ch *ClickhouseImplErrMock) Insert(ctx context.Context, view api.View, rows []common.Vector) (uint64, error) {
+func (ch *ClickhouseImplErrMock) Insert(ctx context.Context, view api.View, rows []types.RowSlice) (uint64, error) {
 	return 0, fmt.Errorf("test error")
 }
 
-type VectorMock struct {
+type RowMock struct {
 	id       int
 	uuid     string
 	insertTs time.Time
 }
 
-func (vm VectorMock) Vector() common.Vector {
-	return common.Vector{vm.id, vm.uuid, vm.insertTs}
+func (vm RowMock) Row() types.RowSlice {
+	return types.RowSlice{vm.id, vm.uuid, vm.insertTs}
 }
 
 func TestClientImpl_HandleStream(t *testing.T) {
 	tableView := api.View{
 		Name:    "test_db.test_table",
-		Columns: []string{"id", "uuid", "insertTs"},
+		Columns: []string{"id", "uuid", "insert_ts"},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,13 +56,13 @@ func TestClientImpl_HandleStream(t *testing.T) {
 		)
 
 		writeAPI := client.Writer(tableView, memoryBuffer)
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 1, uuid: "1", insertTs: time.Now(),
 		})
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
 		})
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
 		})
 
@@ -95,13 +95,13 @@ func TestClientImpl_HandleStream(t *testing.T) {
 			}
 		}()
 
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 1, uuid: "1", insertTs: time.Now(),
 		})
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
 		})
-		writeAPI.WriteVector(VectorMock{
+		writeAPI.WriteRow(RowMock{
 			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
 		})
 

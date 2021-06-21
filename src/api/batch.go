@@ -1,17 +1,17 @@
 package api
 
-import "github.com/zikwall/clickhouse-buffer/src/common"
+import "github.com/zikwall/clickhouse-buffer/src/types"
 
 // Batch holds information for sending rows batch
 type Batch struct {
-	view    View
-	vectors []common.Vector
+	view View
+	rows []types.RowSlice
 }
 
 // NewBatch creates new batch
-func NewBatch(vectors []common.Vector) *Batch {
+func NewBatch(rows []types.RowSlice) *Batch {
 	return &Batch{
-		vectors: vectors,
+		rows: rows,
 	}
 }
 
@@ -19,6 +19,6 @@ func (b *Batch) View() View {
 	return b.view
 }
 
-func (b *Batch) Vectors() []common.Vector {
-	return b.vectors
+func (b *Batch) Rows() []types.RowSlice {
+	return b.rows
 }

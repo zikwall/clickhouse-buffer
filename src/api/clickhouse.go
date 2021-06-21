@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go"
 	"github.com/jmoiron/sqlx"
-	"github.com/zikwall/clickhouse-buffer/src/common"
+	"github.com/zikwall/clickhouse-buffer/src/types"
 	"log"
 	"strings"
 	"time"
 )
 
 type Clickhouse interface {
-	Insert(context.Context, View, []common.Vector) (uint64, error)
+	Insert(context.Context, View, []types.RowSlice) (uint64, error)
 }
 
 type View struct {
@@ -66,7 +66,7 @@ func (ci *clickhouseImpl) SetInsertTimeout(timeout uint) {
 // There is no support for user interfaces as well as simple execution of an already prepared request
 // The entire batch bid is implemented through so-called "transactions",
 // although Clickhouse does not support them - it is only a client solution for preparing requests
-func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []common.Vector) (uint64, error) {
+func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []types.RowSlice) (uint64, error) {
 	tx, err := ci.db.Begin()
 
 	if err != nil {

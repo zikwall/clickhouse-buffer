@@ -44,22 +44,18 @@ The "queue" data structure is a good fit for this.
 
 ## Usage
 
-First you need to implement the Scalar interface, and your own Vector structure for formatting the data
+First you need to implement the `Rowable` interface, and your own `Row` structure for formatting the data
 
 ```go
-type Scalar interface {
-    Vector() Vector
-}
-
 // implement
-type MyVector struct {
+type MyRow struct {
 	id       int
 	uuid     string
 	insertTs time.Time
 }
 
-func (vm MyVector) Vector() common.Vector {
-	return common.Vector{vm.id, vm.uuid, vm.insertTs}
+func (vm MyRow) Row() types.RowSlice {
+	return types.RowSlice{vm.id, vm.uuid, vm.insertTs}
 }
 ```
 
@@ -97,8 +93,8 @@ You can implement your own data buffer interface or use an existing one.
 
 ```go
 type Buffer interface {
-	Write(vector common.Vector)
-	Read() []common.Vector
+	Write(vector types.RowSlice)
+	Read() []types.RowSlice
 	Len() int
 	Flush()
 }
@@ -122,7 +118,7 @@ writeAPI := client.Writer(api.View{
 }, memoryBuffer)
 
 // write your data
-writeAPI.WriteVector(MyVector{
+writeAPI.WriteRow(MyRow{
     id: 1, uuid: "1", insertTs: time.Now(),
 })
 ```
