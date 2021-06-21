@@ -9,11 +9,12 @@ import (
 )
 
 type clientImpl struct {
-	context    context.Context
-	clickhouse api.Clickhouse
-	options    *api.Options
-	writeAPIs  map[string]api.Writer
-	mu         sync.RWMutex
+	context       context.Context
+	clickhouse    api.Clickhouse
+	options       *api.Options
+	writeAPIs     map[string]api.Writer
+	syncWriteAPIs map[string]api.WriterBlocking
+	mu            sync.RWMutex
 }
 
 func NewClient(context context.Context, clickhouse api.Clickhouse) api.Client {
@@ -22,10 +23,11 @@ func NewClient(context context.Context, clickhouse api.Clickhouse) api.Client {
 
 func NewClientWithOptions(context context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
 	client := &clientImpl{
-		context:    context,
-		clickhouse: clickhouse,
-		options:    options,
-		writeAPIs:  map[string]api.Writer{},
+		context:       context,
+		clickhouse:    clickhouse,
+		options:       options,
+		writeAPIs:     map[string]api.Writer{},
+		syncWriteAPIs: map[string]api.WriterBlocking{},
 	}
 
 	return client
@@ -47,6 +49,18 @@ func (cs *clientImpl) Writer(view api.View, buffer buffer.Buffer) api.Writer {
 	return writer
 }
 
+func (cs *clientImpl) WriterBlocking(view api.View) api.WriterBlocking {
+	key := view.Name
+	cs.mu.Lock()
+	if _, ok := cs.syncWriteAPIs[key]; !ok {
+		cs.syncWriteAPIs[key] = api.NewWriterBlocking(cs, view)
+	}
+	writer := cs.syncWriteAPIs[key]
+	cs.mu.Unlock()
+
+	return writer
+}
+
 func (cs *clientImpl) Close() {
 	cs.mu.RLock()
 	apisSnapshot := cs.writeAPIs
@@ -61,10 +75,16 @@ func (cs *clientImpl) Close() {
 		delete(cs.writeAPIs, key)
 		cs.mu.Unlock()
 	}
+
+	cs.mu.Lock()
+	for key := range cs.syncWriteAPIs {
+		delete(cs.syncWriteAPIs, key)
+	}
+	cs.mu.Unlock()
 }
 
 func (cs *clientImpl) HandleStream(btc *api.Batch) error {
-	err := cs.writeBatch(cs.context, btc)
+	err := cs.WriteBatch(cs.context, btc)
 	if err != nil {
 		// In the future, you need to add the possibility of repeating failed packets,
 		// with limits and repetition intervals
@@ -75,7 +95,7 @@ func (cs *clientImpl) HandleStream(btc *api.Batch) error {
 	return nil
 }
 
-func (cs *clientImpl) writeBatch(context context.Context, btc *api.Batch) error {
+func (cs *clientImpl) WriteBatch(context context.Context, btc *api.Batch) error {
 	_, err := cs.clickhouse.Insert(context, btc.View(), btc.Rows())
 	return err
 }
