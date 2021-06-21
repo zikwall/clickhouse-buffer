@@ -31,7 +31,7 @@ Asynchronous write client is recommended for frequent periodic writes.
 #### Client buffer interfaces
 
 - [x] in-memory
-- [ ] redis
+- [x] redis
 
 #### Writes are automatically retried on server back pressure
 
