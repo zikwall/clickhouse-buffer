@@ -4,6 +4,10 @@
 # clickhouse-buffer
 Buffer for streaming data to ClickHouse
 
+## Install
+
+- `$ go get -u github.com/zikwall/clickhouse-buffer`
+
 ## Why and why
 
 In the practice of using the Clickhouse database (in real projects), 

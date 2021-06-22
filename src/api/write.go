@@ -143,7 +143,7 @@ func (w *WriterImpl) listenStreamWrite() {
 	for {
 		select {
 		case btc := <-w.writeCh:
-			err := w.streamer.HandleStream(btc)
+			err := w.streamer.HandleStream(w.view, btc)
 			if err != nil && w.errCh != nil {
 				w.errCh <- err
 			}
