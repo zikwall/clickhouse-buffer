@@ -14,7 +14,7 @@ func (rb *RedisBuffer) Write(row types.RowSlice) {
 	}
 
 	err = rb.client.RPush(rb.context, rb.bucket, string(value)).Err()
-	if !rb.isContextClosedErr(err) {
+	if err != nil && !rb.isContextClosedErr(err) {
 		log.Printf("redis buffer write err: %v\n", err.Error())
 	}
 }
@@ -40,5 +40,5 @@ func (rb *RedisBuffer) Len() int {
 }
 
 func (rb *RedisBuffer) Flush() {
-	rb.client.LTrim(rb.context, rb.bucket, 0, rb.bufferSize).Val()
+	rb.client.LTrim(rb.context, rb.bucket, rb.bufferSize, -1).Val()
 }
