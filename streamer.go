@@ -83,8 +83,8 @@ func (cs *clientImpl) Close() {
 	cs.mu.Unlock()
 }
 
-func (cs *clientImpl) HandleStream(btc *api.Batch) error {
-	err := cs.WriteBatch(cs.context, btc)
+func (cs *clientImpl) HandleStream(view api.View, btc *api.Batch) error {
+	err := cs.WriteBatch(cs.context, view, btc)
 	if err != nil {
 		// In the future, you need to add the possibility of repeating failed packets,
 		// with limits and repetition intervals
@@ -95,7 +95,7 @@ func (cs *clientImpl) HandleStream(btc *api.Batch) error {
 	return nil
 }
 
-func (cs *clientImpl) WriteBatch(context context.Context, btc *api.Batch) error {
-	_, err := cs.clickhouse.Insert(context, btc.View(), btc.Rows())
+func (cs *clientImpl) WriteBatch(context context.Context, view api.View, btc *api.Batch) error {
+	_, err := cs.clickhouse.Insert(context, view, btc.Rows())
 	return err
 }

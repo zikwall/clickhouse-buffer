@@ -8,8 +8,8 @@ import (
 type Client interface {
 	// Options returns the options associated with client
 	Options() *Options
-	HandleStream(*Batch) error
-	WriteBatch(ctx context.Context, batch *Batch) error
+	HandleStream(View, *Batch) error
+	WriteBatch(context.Context, View, *Batch) error
 	// Writer returns the asynchronous, non-blocking, Write client.
 	// Ensures using a single Writer instance for each table pair.
 	Writer(View, buffer.Buffer) Writer
