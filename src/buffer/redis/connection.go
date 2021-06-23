@@ -12,15 +12,15 @@ func key(bucket string) string {
 	return prefix + ":" + bucket
 }
 
-type RedisBuffer struct {
+type Buffer struct {
 	client     *redis.Client
 	context    context.Context
 	bucket     string
 	bufferSize int64
 }
 
-func NewRedisBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (*RedisBuffer, error) {
-	return &RedisBuffer{
+func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (*Buffer, error) {
+	return &Buffer{
 		client:     rdb,
 		context:    ctx,
 		bucket:     key(bucket),
@@ -28,6 +28,6 @@ func NewRedisBuffer(ctx context.Context, rdb *redis.Client, bucket string, buffe
 	}, nil
 }
 
-func (rb *RedisBuffer) isContextClosedErr(err error) bool {
+func (rb *Buffer) isContextClosedErr(err error) bool {
 	return errors.Is(err, redis.ErrClosed) && rb.context.Err() != nil && rb.context.Err() == context.Canceled
 }

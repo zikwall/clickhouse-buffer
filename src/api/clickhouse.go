@@ -120,6 +120,7 @@ func (ci *clickhouseImpl) Close() error {
 	return ci.db.Close()
 }
 
+// creates a template for preparing the query
 func insertQuery(table string, cols []string) string {
 	placeholders := make([]string, 0, len(cols))
 

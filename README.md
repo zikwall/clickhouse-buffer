@@ -108,13 +108,13 @@ Only the in-memory and redis buffer is currently available
 
 ```go
 // use buffer implement interface
-buffer := memory.NewInmemoryBuffer(
+buffer := memory.NewBuffer(
 	client.Options().BatchSize(),
 )
 ```
 
 ```go
-buffer := redis.NewRedisBuffer(
+buffer := redis.NewBuffer(
 	contetx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
 ```

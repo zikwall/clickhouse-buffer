@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (rb *RedisBuffer) Write(row types.RowSlice) {
+func (rb *Buffer) Write(row types.RowSlice) {
 	buf, err := row.Encode()
 	if err == nil {
 		err = rb.client.RPush(rb.context, rb.bucket, buf).Err()
@@ -17,7 +17,7 @@ func (rb *RedisBuffer) Write(row types.RowSlice) {
 	}
 }
 
-func (rb *RedisBuffer) Read() []types.RowSlice {
+func (rb *Buffer) Read() []types.RowSlice {
 	values := rb.client.LRange(rb.context, rb.bucket, 0, rb.bufferSize).Val()
 	slices := make([]types.RowSlice, 0, len(values))
 
@@ -32,10 +32,10 @@ func (rb *RedisBuffer) Read() []types.RowSlice {
 	return slices
 }
 
-func (rb *RedisBuffer) Len() int {
+func (rb *Buffer) Len() int {
 	return int(rb.client.LLen(rb.context, rb.bucket).Val())
 }
 
-func (rb *RedisBuffer) Flush() {
+func (rb *Buffer) Flush() {
 	rb.client.LTrim(rb.context, rb.bucket, rb.bufferSize, -1).Val()
 }

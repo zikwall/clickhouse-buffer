@@ -51,7 +51,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 		defer client.Close()
 
-		memoryBuffer := memory.NewInmemoryBuffer(
+		memoryBuffer := memory.NewBuffer(
 			client.Options().BatchSize(),
 		)
 
@@ -80,7 +80,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 		defer client.Close()
 
-		memoryBuffer := memory.NewInmemoryBuffer(
+		memoryBuffer := memory.NewBuffer(
 			client.Options().BatchSize(),
 		)
 
