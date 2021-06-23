@@ -5,6 +5,8 @@ import (
 	"encoding/gob"
 )
 
+// Rower interface is an assistant in the correct formation of the order of fields in the data
+// before sending it to Clickhouse
 type Rower interface {
 	Row() RowSlice
 }
@@ -12,6 +14,8 @@ type Rower interface {
 type RowSlice []interface{}
 type RowDecoded string
 
+// Encode turns the RowSlice type into an array of bytes.
+// This method is used for data serialization and storage in remote buffers, such as redis.Buffer
 func (rw RowSlice) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -24,6 +28,7 @@ func (rw RowSlice) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Decode This method is required to reverse deserialize an array of bytes in a RowSlice type
 func (rd RowDecoded) Decode() (RowSlice, error) {
 	var v RowSlice
 	err := gob.NewDecoder(bytes.NewReader([]byte(rd))).Decode(&v)
