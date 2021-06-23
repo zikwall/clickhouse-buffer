@@ -1,21 +1,19 @@
 package redis
 
 import (
-	"encoding/json"
 	"github.com/zikwall/clickhouse-buffer/src/types"
 	"log"
 )
 
 func (rb *RedisBuffer) Write(row types.RowSlice) {
-	value, err := json.Marshal(row)
-	if err != nil {
-		log.Printf("redis buffer write err: %v\n", err.Error())
-		return
-	}
-
-	err = rb.client.RPush(rb.context, rb.bucket, string(value)).Err()
-	if err != nil && !rb.isContextClosedErr(err) {
-		log.Printf("redis buffer write err: %v\n", err.Error())
+	buf, err := row.Encode()
+	if err == nil {
+		err = rb.client.RPush(rb.context, rb.bucket, buf).Err()
+		if err != nil && !rb.isContextClosedErr(err) {
+			log.Printf("redis buffer write err: %v\n", err.Error())
+		}
+	} else {
+		log.Printf("redis buffer value encode err: %v\n", err.Error())
 	}
 }
 
@@ -23,9 +21,8 @@ func (rb *RedisBuffer) Read() []types.RowSlice {
 	values := rb.client.LRange(rb.context, rb.bucket, 0, rb.bufferSize).Val()
 	slices := make([]types.RowSlice, 0, len(values))
 
-	var v types.RowSlice
 	for _, value := range values {
-		if err := json.Unmarshal([]byte(value), &v); err == nil {
+		if v, err := types.RowDecoded(value).Decode(); err == nil {
 			slices = append(slices, v)
 		} else {
 			log.Printf("redis buffer read err: %v\n", err.Error())
