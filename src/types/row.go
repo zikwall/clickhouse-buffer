@@ -18,9 +18,8 @@ type RowDecoded string
 // This method is used for data serialization and storage in remote buffers, such as redis.Buffer
 func (rw RowSlice) Encode() ([]byte, error) {
 	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
+	err := gob.NewEncoder(&buf).Encode(rw)
 
-	err := encoder.Encode(rw)
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +31,7 @@ func (rw RowSlice) Encode() ([]byte, error) {
 func (rd RowDecoded) Decode() (RowSlice, error) {
 	var v RowSlice
 	err := gob.NewDecoder(bytes.NewReader([]byte(rd))).Decode(&v)
+
 	if err != nil {
 		return nil, err
 	}
