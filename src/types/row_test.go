@@ -1,6 +1,7 @@
 package types
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -29,17 +30,24 @@ func TestRow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		v, err := RowDecoded(encoded).Decode()
+		value, err := RowDecoded(encoded).Decode()
 
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if len(v) != 3 {
+		if len(value) != 3 {
 			t.Fatal("Failed, expected to get three columns")
 		}
 
-		if v[0] != "1" && v[1] != "uuid_here" {
+		types := []reflect.Kind{reflect.Int, reflect.String, reflect.String}
+		for i, col := range value {
+			if t1 := reflect.TypeOf(col).Kind(); t1 != types[i] {
+				t.Fatalf("Failed, expected to get int type, received %s", t1)
+			}
+		}
+
+		if value[0] != 1 && value[1] != "uuid_here" {
 			t.Fatal("Failed, expected to get [0] => '1' and [1] => 'uuid_here'")
 		}
 	})
