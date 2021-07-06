@@ -33,11 +33,11 @@ type WriterImpl struct {
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(client Client, view View, buffer buffer.Buffer, writeOptions *Options) *WriterImpl {
+func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Options) *WriterImpl {
 	w := &WriterImpl{
 		view:         view,
 		streamer:     client,
-		writeBuffer:  buffer,
+		writeBuffer:  buf,
 		writeOptions: writeOptions,
 		writeCh:      make(chan *Batch),
 		bufferCh:     make(chan types.RowSlice),

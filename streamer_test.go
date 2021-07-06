@@ -1,4 +1,4 @@
-package clickhouse_buffer
+package clickhousebuffer
 
 import (
 	"context"
@@ -25,11 +25,11 @@ func (ch *ClickhouseImplErrMock) Insert(_ context.Context, _ api.View, _ []types
 type RowMock struct {
 	id       int
 	uuid     string
-	insertTs time.Time
+	insertTS time.Time
 }
 
 func (vm RowMock) Row() types.RowSlice {
-	return types.RowSlice{vm.id, vm.uuid, vm.insertTs}
+	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 
 func TestClientImpl_HandleStream(t *testing.T) {
@@ -40,9 +40,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer func() {
-		cancel()
-	}()
+	defer cancel()
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
@@ -57,13 +55,13 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 		writeAPI := client.Writer(tableView, memoryBuffer)
 		writeAPI.WriteRow(RowMock{
-			id: 1, uuid: "1", insertTs: time.Now(),
+			id: 1, uuid: "1", insertTS: time.Now(),
 		})
 		writeAPI.WriteRow(RowMock{
-			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
+			id: 2, uuid: "2", insertTS: time.Now().Add(time.Second),
 		})
 		writeAPI.WriteRow(RowMock{
-			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
+			id: 3, uuid: "3", insertTS: time.Now().Add(time.Second * 2),
 		})
 
 		<-time.After(time.Millisecond * 550)
@@ -96,13 +94,13 @@ func TestClientImpl_HandleStream(t *testing.T) {
 		}()
 
 		writeAPI.WriteRow(RowMock{
-			id: 1, uuid: "1", insertTs: time.Now(),
+			id: 1, uuid: "1", insertTS: time.Now(),
 		})
 		writeAPI.WriteRow(RowMock{
-			id: 2, uuid: "2", insertTs: time.Now().Add(time.Second),
+			id: 2, uuid: "2", insertTS: time.Now().Add(time.Second),
 		})
 		writeAPI.WriteRow(RowMock{
-			id: 3, uuid: "3", insertTs: time.Now().Add(time.Second * 2),
+			id: 3, uuid: "3", insertTS: time.Now().Add(time.Second * 2),
 		})
 
 		<-time.After(time.Millisecond * 50)
@@ -125,9 +123,7 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer func() {
-		cancel()
-	}()
+	defer cancel()
 
 	t.Run("it should be correct send data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
@@ -140,13 +136,13 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 		err := writerBlocking.WriteRow(ctx, []types.Rower{
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 		}...)
 
@@ -166,13 +162,13 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 		err := writerBlocking.WriteRow(ctx, []types.Rower{
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 			RowMock{
-				id: 1, uuid: "1", insertTs: time.Now(),
+				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 		}...)
 

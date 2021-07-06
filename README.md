@@ -55,11 +55,11 @@ First you need to implement the `Rowable` interface, and your own `Row` structur
 type MyRow struct {
 	id       int
 	uuid     string
-	insertTs time.Time
+	insertTS time.Time
 }
 
 func (vm MyRow) Row() types.RowSlice {
-	return types.RowSlice{vm.id, vm.uuid, vm.insertTs}
+	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 ```
 
@@ -69,7 +69,7 @@ You can use two methods:
  - create a connection to the Clickhouse database from the connection parameters,
 
 ```go
-clickhouse, _ := api.NewClickhouseWithOptions(api.ClickhouseCfg{
+clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
     Address:  "my.clickhouse.host",
     Password: "",
     User:     "default",
@@ -129,7 +129,7 @@ writeAPI := client.Writer(api.View{
 
 // write your data
 writeAPI.WriteRow(MyRow{
-    id: 1, uuid: "1", insertTs: time.Now(),
+    id: 1, uuid: "1", insertTS: time.Now(),
 })
 ```
 
@@ -154,13 +154,13 @@ writerBlocking := client.WriterBlocking(api.View{
 
 err := writerBlocking.WriteRow(ctx, []types.Rower{
     MyRow{
-        id: 1, uuid: "1", insertTs: time.Now(),
+        id: 1, uuid: "1", insertTS: time.Now(),
     },
     MyRow{
-        id: 2, uuid: "2", insertTs: time.Now(),
+        id: 2, uuid: "2", insertTS: time.Now(),
     },
     MyRow{
-        id: 3, uuid: "3", insertTs: time.Now(),
+        id: 3, uuid: "3", insertTS: time.Now(),
     },
 }...)
 ```

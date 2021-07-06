@@ -20,7 +20,7 @@ type View struct {
 	Columns []string
 }
 
-type clickhouseImpl struct {
+type ClickhouseImpl struct {
 	db            *sqlx.DB
 	insertTimeout uint
 }
@@ -34,7 +34,7 @@ type ClickhouseCfg struct {
 	IsDebug  bool
 }
 
-func NewClickhouseWithOptions(cfg ClickhouseCfg) (*clickhouseImpl, error) {
+func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*ClickhouseImpl, error) {
 	connectionPool, err := sqlx.Open("clickhouse", buildConnectionString(cfg))
 	if err != nil {
 		return nil, err
@@ -43,22 +43,22 @@ func NewClickhouseWithOptions(cfg ClickhouseCfg) (*clickhouseImpl, error) {
 	return NewClickhouseWithSqlx(connectionPool)
 }
 
-func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (*clickhouseImpl, error) {
+func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (*ClickhouseImpl, error) {
 	if err := connectionPool.Ping(); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
-			return nil, fmt.Errorf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+			return nil, fmt.Errorf("[%d] %s \n%s", exception.Code, exception.Message, exception.StackTrace)
 		}
 
 		return nil, err
 	}
 
-	return &clickhouseImpl{
+	return &ClickhouseImpl{
 		db:            connectionPool,
 		insertTimeout: 15000,
 	}, nil
 }
 
-func (ci *clickhouseImpl) SetInsertTimeout(timeout uint) {
+func (ci *ClickhouseImpl) SetInsertTimeout(timeout uint) {
 	ci.insertTimeout = timeout
 }
 
@@ -66,7 +66,7 @@ func (ci *clickhouseImpl) SetInsertTimeout(timeout uint) {
 // There is no support for user interfaces as well as simple execution of an already prepared request
 // The entire batch bid is implemented through so-called "transactions",
 // although Clickhouse does not support them - it is only a client solution for preparing requests
-func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []types.RowSlice) (uint64, error) {
+func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []types.RowSlice) (uint64, error) {
 	tx, err := ci.db.Begin()
 
 	if err != nil {
@@ -99,7 +99,7 @@ func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []types.Ro
 	for _, row := range rows {
 		// row affected is not supported
 		if _, err := stmt.ExecContext(timeoutContext, row...); err == nil {
-			affected += 1
+			affected++
 		} else {
 			log.Println(err)
 		}
@@ -112,11 +112,11 @@ func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []types.Ro
 	return affected, nil
 }
 
-func (ci *clickhouseImpl) ConnectionPool() *sqlx.DB {
+func (ci *ClickhouseImpl) ConnectionPool() *sqlx.DB {
 	return ci.db
 }
 
-func (ci *clickhouseImpl) Close() error {
+func (ci *ClickhouseImpl) Close() error {
 	return ci.db.Close()
 }
 
@@ -138,7 +138,7 @@ func insertQuery(table string, cols []string) string {
 	return prepared
 }
 
-func buildConnectionString(cfg ClickhouseCfg) string {
+func buildConnectionString(cfg *ClickhouseCfg) string {
 	debug := "false"
 
 	if cfg.IsDebug {
