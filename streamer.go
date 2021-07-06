@@ -17,13 +17,13 @@ type clientImpl struct {
 	mu            sync.RWMutex
 }
 
-func NewClient(context context.Context, clickhouse api.Clickhouse) api.Client {
-	return NewClientWithOptions(context, clickhouse, api.DefaultOptions())
+func NewClient(ctx context.Context, clickhouse api.Clickhouse) api.Client {
+	return NewClientWithOptions(ctx, clickhouse, api.DefaultOptions())
 }
 
-func NewClientWithOptions(context context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
+func NewClientWithOptions(ctx context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
 	client := &clientImpl{
-		context:       context,
+		context:       ctx,
 		clickhouse:    clickhouse,
 		options:       options,
 		writeAPIs:     map[string]api.Writer{},
@@ -95,7 +95,7 @@ func (cs *clientImpl) HandleStream(view api.View, btc *api.Batch) error {
 	return nil
 }
 
-func (cs *clientImpl) WriteBatch(context context.Context, view api.View, btc *api.Batch) error {
-	_, err := cs.clickhouse.Insert(context, view, btc.Rows())
+func (cs *clientImpl) WriteBatch(ctx context.Context, view api.View, btc *api.Batch) error {
+	_, err := cs.clickhouse.Insert(ctx, view, btc.Rows())
 	return err
 }
