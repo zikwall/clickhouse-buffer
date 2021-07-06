@@ -99,7 +99,7 @@ func (ci *clickhouseImpl) Insert(ctx context.Context, view View, rows []types.Ro
 	for _, row := range rows {
 		// row affected is not supported
 		if _, err := stmt.ExecContext(timeoutContext, row...); err == nil {
-			affected += 1
+			affected++
 		} else {
 			log.Println(err)
 		}
