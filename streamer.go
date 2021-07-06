@@ -1,4 +1,4 @@
-package clickhouse_buffer
+package clickhousebuffer
 
 import (
 	"context"
