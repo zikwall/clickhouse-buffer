@@ -9,11 +9,11 @@ import (
 type RowMock struct {
 	id       int
 	uuid     string
-	insertTs time.Time
+	insertTS time.Time
 }
 
 func (vm RowMock) Row() RowSlice {
-	return RowSlice{vm.id, vm.uuid, vm.insertTs.Format(time.RFC822)}
+	return RowSlice{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
 }
 
 func TestRow(t *testing.T) {
@@ -21,7 +21,7 @@ func TestRow(t *testing.T) {
 		slice := RowMock{
 			id:       1,
 			uuid:     "uuid_here",
-			insertTs: time.Now(),
+			insertTS: time.Now(),
 		}.Row()
 
 		encoded, err := slice.Encode()
