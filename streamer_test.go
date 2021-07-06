@@ -40,9 +40,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer func() {
-		cancel()
-	}()
+	defer cancel()
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
@@ -125,9 +123,7 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer func() {
-		cancel()
-	}()
+	defer cancel()
 
 	t.Run("it should be correct send data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
