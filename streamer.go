@@ -37,11 +37,11 @@ func (cs *clientImpl) Options() *api.Options {
 	return cs.options
 }
 
-func (cs *clientImpl) Writer(view api.View, buffer buffer.Buffer) api.Writer {
+func (cs *clientImpl) Writer(view api.View, buf buffer.Buffer) api.Writer {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.writeAPIs[key]; !ok {
-		cs.writeAPIs[key] = api.NewWriter(cs, view, buffer, cs.options)
+		cs.writeAPIs[key] = api.NewWriter(cs, view, buf, cs.options)
 	}
 	writer := cs.writeAPIs[key]
 	cs.mu.Unlock()
