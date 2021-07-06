@@ -46,7 +46,7 @@ func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*clickhouseImpl, error) {
 func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (*clickhouseImpl, error) {
 	if err := connectionPool.Ping(); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
-			return nil, fmt.Errorf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+			return nil, fmt.Errorf("[%d] %s \n%s", exception.Code, exception.Message, exception.StackTrace)
 		}
 
 		return nil, err
