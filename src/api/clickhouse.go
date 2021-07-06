@@ -34,7 +34,7 @@ type ClickhouseCfg struct {
 	IsDebug  bool
 }
 
-func NewClickhouseWithOptions(cfg ClickhouseCfg) (*clickhouseImpl, error) {
+func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*clickhouseImpl, error) {
 	connectionPool, err := sqlx.Open("clickhouse", buildConnectionString(cfg))
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func insertQuery(table string, cols []string) string {
 	return prepared
 }
 
-func buildConnectionString(cfg ClickhouseCfg) string {
+func buildConnectionString(cfg *ClickhouseCfg) string {
 	debug := "false"
 
 	if cfg.IsDebug {

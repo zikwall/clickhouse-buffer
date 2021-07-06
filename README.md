@@ -69,7 +69,7 @@ You can use two methods:
  - create a connection to the Clickhouse database from the connection parameters,
 
 ```go
-clickhouse, _ := api.NewClickhouseWithOptions(api.ClickhouseCfg{
+clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
     Address:  "my.clickhouse.host",
     Password: "",
     User:     "default",
