@@ -40,9 +40,12 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not set value: %s", err)
 	}
 
-	if value := db.Get(context.Background(), "test_key").Val(); value != "test_value" {
+	value := db.Get(context.Background(), "test_key").Val()
+	if value != "test_value" {
 		log.Fatalf("Could not get correct value, received: %s", value)
 	}
+
+	log.Printf("Received value: %s", value)
 
 	code := m.Run()
 
