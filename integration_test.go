@@ -3,12 +3,14 @@
 package clickhousebuffer
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/ory/dockertest/v3"
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
