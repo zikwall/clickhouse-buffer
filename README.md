@@ -168,4 +168,5 @@ err := writerBlocking.WriteRow(ctx, []Inline{
 ### Tests
 
 - `$ go test -v ./...`
+- `$ go test -v ./... -tags=integration`
 - `golangci-lint run --config golanci-linter.yml`
