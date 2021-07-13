@@ -129,6 +129,8 @@ func TestMain(m *testing.M) {
 		id: 5, uuid: "5", insertTS: time.Now(),
 	})
 
+	<-time.After(50 * time.Millisecond)
+
 	rows := redisBuffer.Read()
 	if len(rows) != 5 {
 		log.Fatalf("Could not get correct valuse, received: %v", rows)
@@ -172,9 +174,8 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed, expected to get five values, received %d", len(values))
 	}
 
-	v := values[2][0]
-	if vv, ok := v.(uint8); ok || vv != 3 {
-		log.Fatalf("Failed, expected value 3, received %d", v)
+	if v := values[2][1]; v != "3" {
+		log.Fatalf("Failed, expected value 3, received %s", v)
 	}
 
 	code := m.Run()
