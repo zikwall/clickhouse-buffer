@@ -58,7 +58,7 @@ type MyRow struct {
 	insertTS time.Time
 }
 
-func (vm MyRow) Row() types.RowSlice {
+func (vm MyRow) Row() clikchousebuffer.RowSlice {
 	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 ```
@@ -69,7 +69,7 @@ You can use two methods:
  - create a connection to the Clickhouse database from the connection parameters,
 
 ```go
-clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
+clickhouse, _ := clikchousebuffer.NewClickhouseWithOptions(&clikchousebuffer.ClickhouseCfg{
     Address:  "my.clickhouse.host",
     Password: "",
     User:     "default",
@@ -82,14 +82,14 @@ clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
 - use an existing connection pool by providing `sqlx.DB`
 
 ```go
-clickhouse, _ := api.NewClickhouseWithSqlx(*sqlx.DB)
+clickhouse, _ := clikchousebuffer.NewClickhouseWithSqlx(*sqlx.DB)
 ```
 
 #### Create main data streamer client and write data
 
 ```go
 client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-	api.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
+    clikchousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
 ```
 
@@ -97,8 +97,8 @@ You can implement your own data buffer interface: `File`, `Rabbitmq`, `CustomMem
 
 ```go
 type Buffer interface {
-	Write(vector types.RowSlice)
-	Read() []types.RowSlice
+	Write(vector clikchousebuffer.RowSlice)
+	Read() []clikchousebuffer.RowSlice
 	Len() int
 	Flush()
 }
@@ -152,7 +152,7 @@ writerBlocking := client.WriterBlocking(api.View{
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 
-err := writerBlocking.WriteRow(ctx, []types.Rower{
+err := writerBlocking.WriteRow(ctx, []clikchousebuffer.Inline{
     MyRow{
         id: 1, uuid: "1", insertTS: time.Now(),
     },

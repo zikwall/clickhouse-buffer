@@ -1,24 +1,24 @@
 package memory
 
 import (
-	"github.com/zikwall/clickhouse-buffer/src/types"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
 type Buffer struct {
-	writeBuffer []types.RowSlice
+	writeBuffer []buffer.RowSlice
 }
 
 func NewBuffer(bufferSize uint) *Buffer {
 	return &Buffer{
-		writeBuffer: make([]types.RowSlice, 0, bufferSize+1),
+		writeBuffer: make([]buffer.RowSlice, 0, bufferSize+1),
 	}
 }
 
-func (in *Buffer) Write(row types.RowSlice) {
+func (in *Buffer) Write(row buffer.RowSlice) {
 	in.writeBuffer = append(in.writeBuffer, row)
 }
 
-func (in *Buffer) Read() []types.RowSlice {
+func (in *Buffer) Read() []buffer.RowSlice {
 	return in.writeBuffer
 }
 

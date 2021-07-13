@@ -1,4 +1,4 @@
-package api
+package clickhousebuffer
 
 import (
 	"context"

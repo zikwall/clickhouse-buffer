@@ -1,8 +1,7 @@
-package api
+package clickhousebuffer
 
 import (
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/src/types"
 	"time"
 )
 
@@ -11,7 +10,7 @@ import (
 // When using multiple goroutines for writing, use a single WriteAPI instance in all goroutines.
 type Writer interface {
 	// WriteRow writes asynchronously line protocol record into bucket.
-	WriteRow(vector types.Rower)
+	WriteRow(vector buffer.Inline)
 	// Flush forces all pending writes from the buffer to be sent
 	Flush()
 	// Errors returns a channel for reading errors which occurs during async writes.
@@ -24,7 +23,7 @@ type WriterImpl struct {
 	writeBuffer  buffer.Buffer
 	writeCh      chan *Batch
 	errCh        chan error
-	bufferCh     chan types.RowSlice
+	bufferCh     chan buffer.RowSlice
 	bufferFlush  chan struct{}
 	doneCh       chan struct{}
 	writeStop    chan struct{}
@@ -40,7 +39,7 @@ func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Option
 		writeBuffer:  buf,
 		writeOptions: writeOptions,
 		writeCh:      make(chan *Batch),
-		bufferCh:     make(chan types.RowSlice),
+		bufferCh:     make(chan buffer.RowSlice),
 		bufferFlush:  make(chan struct{}),
 		doneCh:       make(chan struct{}),
 		bufferStop:   make(chan struct{}),
@@ -55,7 +54,7 @@ func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Option
 
 // WriteRow writes asynchronously line protocol record into bucket.
 // WriteRow adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *WriterImpl) WriteRow(rower types.Rower) {
+func (w *WriterImpl) WriteRow(rower buffer.Inline) {
 	w.bufferCh <- rower.Row()
 }
 

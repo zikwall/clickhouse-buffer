@@ -3,22 +3,21 @@ package clickhousebuffer
 import (
 	"context"
 	"fmt"
-	"github.com/zikwall/clickhouse-buffer/src/api"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
-	"github.com/zikwall/clickhouse-buffer/src/types"
 	"testing"
 	"time"
 )
 
 type ClickhouseImplMock struct{}
 
-func (ch *ClickhouseImplMock) Insert(_ context.Context, _ api.View, _ []types.RowSlice) (uint64, error) {
+func (ch *ClickhouseImplMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, nil
 }
 
 type ClickhouseImplErrMock struct{}
 
-func (ch *ClickhouseImplErrMock) Insert(_ context.Context, _ api.View, _ []types.RowSlice) (uint64, error) {
+func (ch *ClickhouseImplErrMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, fmt.Errorf("test error")
 }
 
@@ -28,12 +27,12 @@ type RowMock struct {
 	insertTS time.Time
 }
 
-func (vm RowMock) Row() types.RowSlice {
-	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
+func (vm RowMock) Row() buffer.RowSlice {
+	return buffer.RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 
 func TestClientImpl_HandleStream(t *testing.T) {
-	tableView := api.View{
+	tableView := View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}
@@ -44,7 +43,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
-			api.DefaultOptions().SetFlushInterval(200).SetBatchSize(3),
+			DefaultOptions().SetFlushInterval(200).SetBatchSize(3),
 		)
 
 		defer client.Close()
@@ -73,7 +72,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 
 	t.Run("it should be successfully received three errors about writing", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+			DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
 		)
 
 		defer client.Close()
@@ -116,7 +115,7 @@ func TestClientImpl_HandleStream(t *testing.T) {
 }
 
 func TestClientImpl_WriteBatch(t *testing.T) {
-	tableView := api.View{
+	tableView := View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}
@@ -127,14 +126,14 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 	t.Run("it should be correct send data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
-			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+			DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
 		)
 
 		defer client.Close()
 
 		writerBlocking := client.WriterBlocking(tableView)
 
-		err := writerBlocking.WriteRow(ctx, []types.Rower{
+		err := writerBlocking.WriteRow(ctx, []buffer.Inline{
 			RowMock{
 				id: 1, uuid: "1", insertTS: time.Now(),
 			},
@@ -153,14 +152,14 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 
 	t.Run("it should be successfully received error about writing", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-			api.DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
+			DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
 		)
 
 		defer client.Close()
 
 		writerBlocking := client.WriterBlocking(tableView)
 
-		err := writerBlocking.WriteRow(ctx, []types.Rower{
+		err := writerBlocking.WriteRow(ctx, []buffer.Inline{
 			RowMock{
 				id: 1, uuid: "1", insertTS: time.Now(),
 			},

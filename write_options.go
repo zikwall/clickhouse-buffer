@@ -1,4 +1,4 @@
-package api
+package clickhousebuffer
 
 // Options holds write configuration properties
 type Options struct {

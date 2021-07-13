@@ -1,15 +1,15 @@
-package api
+package clickhousebuffer
 
 import (
 	"context"
-	"github.com/zikwall/clickhouse-buffer/src/types"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
 type WriterBlocking interface {
 	// WriteRow writes row(s) into bucket.
 	// WriteRow writes without implicit batching. Batch is created from given number of records
 	// Non-blocking alternative is available in the Writer interface
-	WriteRow(ctx context.Context, row ...types.Rower) error
+	WriteRow(ctx context.Context, row ...buffer.Inline) error
 }
 
 type WriterBlockingImpl struct {
@@ -24,9 +24,9 @@ func NewWriterBlocking(streamer Client, view View) WriterBlocking {
 	}
 }
 
-func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...types.Rower) error {
+func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...buffer.Inline) error {
 	if len(row) > 0 {
-		rows := make([]types.RowSlice, 0, len(row))
+		rows := make([]buffer.RowSlice, 0, len(row))
 		for _, r := range row {
 			rows = append(rows, r.Row())
 		}
@@ -37,7 +37,7 @@ func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...types.Rower) e
 	return nil
 }
 
-func (w *WriterBlockingImpl) write(ctx context.Context, rows []types.RowSlice) error {
+func (w *WriterBlockingImpl) write(ctx context.Context, rows []buffer.RowSlice) error {
 	err := w.streamer.WriteBatch(ctx, w.view, NewBatch(rows))
 
 	if err != nil {

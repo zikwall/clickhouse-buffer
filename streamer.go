@@ -2,7 +2,6 @@ package clickhousebuffer
 
 import (
 	"context"
-	"github.com/zikwall/clickhouse-buffer/src/api"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"log"
 	"sync"
@@ -10,38 +9,38 @@ import (
 
 type clientImpl struct {
 	context       context.Context
-	clickhouse    api.Clickhouse
-	options       *api.Options
-	writeAPIs     map[string]api.Writer
-	syncWriteAPIs map[string]api.WriterBlocking
+	clickhouse    Clickhouse
+	options       *Options
+	writeAPIs     map[string]Writer
+	syncWriteAPIs map[string]WriterBlocking
 	mu            sync.RWMutex
 }
 
-func NewClient(ctx context.Context, clickhouse api.Clickhouse) api.Client {
-	return NewClientWithOptions(ctx, clickhouse, api.DefaultOptions())
+func NewClient(ctx context.Context, clickhouse Clickhouse) Client {
+	return NewClientWithOptions(ctx, clickhouse, DefaultOptions())
 }
 
-func NewClientWithOptions(ctx context.Context, clickhouse api.Clickhouse, options *api.Options) api.Client {
+func NewClientWithOptions(ctx context.Context, clickhouse Clickhouse, options *Options) Client {
 	client := &clientImpl{
 		context:       ctx,
 		clickhouse:    clickhouse,
 		options:       options,
-		writeAPIs:     map[string]api.Writer{},
-		syncWriteAPIs: map[string]api.WriterBlocking{},
+		writeAPIs:     map[string]Writer{},
+		syncWriteAPIs: map[string]WriterBlocking{},
 	}
 
 	return client
 }
 
-func (cs *clientImpl) Options() *api.Options {
+func (cs *clientImpl) Options() *Options {
 	return cs.options
 }
 
-func (cs *clientImpl) Writer(view api.View, buf buffer.Buffer) api.Writer {
+func (cs *clientImpl) Writer(view View, buf buffer.Buffer) Writer {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.writeAPIs[key]; !ok {
-		cs.writeAPIs[key] = api.NewWriter(cs, view, buf, cs.options)
+		cs.writeAPIs[key] = NewWriter(cs, view, buf, cs.options)
 	}
 	writer := cs.writeAPIs[key]
 	cs.mu.Unlock()
@@ -49,11 +48,11 @@ func (cs *clientImpl) Writer(view api.View, buf buffer.Buffer) api.Writer {
 	return writer
 }
 
-func (cs *clientImpl) WriterBlocking(view api.View) api.WriterBlocking {
+func (cs *clientImpl) WriterBlocking(view View) WriterBlocking {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.syncWriteAPIs[key]; !ok {
-		cs.syncWriteAPIs[key] = api.NewWriterBlocking(cs, view)
+		cs.syncWriteAPIs[key] = NewWriterBlocking(cs, view)
 	}
 	writer := cs.syncWriteAPIs[key]
 	cs.mu.Unlock()
@@ -67,7 +66,7 @@ func (cs *clientImpl) Close() {
 	cs.mu.RUnlock()
 
 	for key, w := range apisSnapshot {
-		if wa, ok := w.(*api.WriterImpl); ok {
+		if wa, ok := w.(*WriterImpl); ok {
 			wa.Close()
 		}
 
@@ -83,7 +82,7 @@ func (cs *clientImpl) Close() {
 	cs.mu.Unlock()
 }
 
-func (cs *clientImpl) HandleStream(view api.View, btc *api.Batch) error {
+func (cs *clientImpl) HandleStream(view View, btc *Batch) error {
 	err := cs.WriteBatch(cs.context, view, btc)
 	if err != nil {
 		// In the future, you need to add the possibility of repeating failed packets,
@@ -95,7 +94,7 @@ func (cs *clientImpl) HandleStream(view api.View, btc *api.Batch) error {
 	return nil
 }
 
-func (cs *clientImpl) WriteBatch(ctx context.Context, view api.View, btc *api.Batch) error {
+func (cs *clientImpl) WriteBatch(ctx context.Context, view View, btc *Batch) error {
 	_, err := cs.clickhouse.Insert(ctx, view, btc.Rows())
 	return err
 }

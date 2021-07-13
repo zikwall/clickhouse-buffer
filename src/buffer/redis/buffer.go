@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"github.com/zikwall/clickhouse-buffer/src/types"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"log"
 )
 
-func (rb *Buffer) Write(row types.RowSlice) {
+func (rb *Buffer) Write(row buffer.RowSlice) {
 	buf, err := row.Encode()
 	if err == nil {
 		err = rb.client.RPush(rb.context, rb.bucket, buf).Err()
@@ -17,12 +17,12 @@ func (rb *Buffer) Write(row types.RowSlice) {
 	}
 }
 
-func (rb *Buffer) Read() []types.RowSlice {
+func (rb *Buffer) Read() []buffer.RowSlice {
 	values := rb.client.LRange(rb.context, rb.bucket, 0, rb.bufferSize).Val()
-	slices := make([]types.RowSlice, 0, len(values))
+	slices := make([]buffer.RowSlice, 0, len(values))
 
 	for _, value := range values {
-		if v, err := types.RowDecoded(value).Decode(); err == nil {
+		if v, err := buffer.RowDecoded(value).Decode(); err == nil {
 			slices = append(slices, v)
 		} else {
 			log.Printf("redis buffer read err: %v\n", err.Error())
