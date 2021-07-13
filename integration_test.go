@@ -94,7 +94,7 @@ func TestMain(m *testing.M) {
 		CREATE TABLE IF NOT EXISTS default.test_integration (
 			id        	UInt8,
 			uuid   		String,
-			insert_ts   String,
+			insert_ts   String
 		) engine=Memory
 	`)
 
