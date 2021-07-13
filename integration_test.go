@@ -164,7 +164,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed, expected to get five values, received %d", len(values))
 	}
 
-	if v := values[2][1]; v != "3" {
+	if v := values[2].uuid; v != "3" {
 		log.Fatalf("Failed, expected value 3, received %s", v)
 	}
 
@@ -182,14 +182,20 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([][]interface{}, error) {
+type clickhouseRowData struct {
+	id        uint8
+	uuid      string
+	createdAt string
+}
+
+func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([]clickhouseRowData, error) {
 	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
 	if err != nil {
 		return nil, err
 	}
 	defer rws.Close()
 
-	var values [][]interface{}
+	var values []clickhouseRowData
 	for rws.Next() {
 		var (
 			id        uint8
@@ -201,7 +207,7 @@ func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([][]interface{}, err
 			return nil, err
 		}
 
-		values = append(values, []interface{}{id, uuid, createdAt})
+		values = append(values, clickhouseRowData{id, uuid, createdAt})
 	}
 
 	if err := rws.Err(); err != nil {
