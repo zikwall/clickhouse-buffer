@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	defer cancel()
 
 	client := NewClientWithOptions(ctx, &ClickhouseImplIntegration{},
-		DefaultOptions().SetFlushInterval(500).SetBatchSize(5),
+		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
 	)
 
 	var db *redis.Client
