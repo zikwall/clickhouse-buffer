@@ -144,6 +144,39 @@ func TestMain(m *testing.M) {
 		log.Fatal("Failed, the buffer was expected to be cleared")
 	}
 
+	rws, err := ch.Query("SELECT id, uuid, insert_ts FROM default.test_integration")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rws.Close()
+
+	var values [][]interface{}
+	for rws.Next() {
+		var (
+			id        uint8
+			uuid      string
+			createdAt string
+		)
+
+		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
+			log.Fatal(err)
+		}
+
+		values = append(values, []interface{}{id, uuid, createdAt})
+	}
+
+	if err := rws.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	if len(values) != 3 {
+		log.Fatalf("Failed, expected to get three values, received %d", len(values))
+	}
+
+	if v := values[2][0]; v != 3 {
+		log.Fatalf("Failed, expected to value 3, received %d", v)
+	}
+
 	code := m.Run()
 
 	// You can't defer this because os.Exit doesn't care for defer
