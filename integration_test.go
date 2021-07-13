@@ -3,14 +3,12 @@
 package clickhousebuffer
 
 import (
-	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/ory/dockertest/v3"
 	"log"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -36,19 +34,19 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	code := m.Run()
-
-	// You can't defer this because os.Exit doesn't care for defer
-	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge resource: %s", err)
-	}
-
 	if err := db.Set(context.Background(), "test_key", "test_value", 10*time.Second).Err(); err != nil {
 		log.Fatalf("Could not set value: %s", err)
 	}
 
 	if value := db.Get(context.Background(), "test_key").Val(); value != "test_value" {
 		log.Fatalf("Could not get correct value, received: %s", value)
+	}
+
+	code := m.Run()
+
+	// You can't defer this because os.Exit doesn't care for defer
+	if err := pool.Purge(resource); err != nil {
+		log.Fatalf("Could not purge resource: %s", err)
 	}
 
 	os.Exit(code)
