@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	redis2 "github.com/zikwall/clickhouse-buffer/src/buffer/redis"
@@ -35,12 +36,11 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := NewClientWithOptions(ctx, &ClickhouseImplIntegration{},
-		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
-	)
-
 	var db *redis.Client
+	var ch *sqlx.DB
+	var clickhouse Clickhouse
 
+	// REDIS
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
@@ -61,13 +61,58 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
+	// CLICKHOUSE
+	pool2, err := dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	resource2, err := pool2.Run("yandex/clickhouse-server", "20.8.19.4", nil)
+	if err != nil {
+		log.Fatalf("Could not start resource: %s", err)
+	}
+
+	if err := pool2.Retry(func() error {
+		ch, err := sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
+
+		if err != nil {
+			return err
+		}
+
+		clickhouse, err = NewClickhouseWithSqlx(ch)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	_, err = ch.Exec(`
+		CREATE TABLE IF NOT EXISTS default.test_integration (
+			id        	UInt8,
+			uuid   		String,
+			insert_ts   String,
+		) engine=Memory
+	`)
+
+	if err != nil {
+		log.Fatalf("Could create clickhouse table: %s", err)
+	}
+
+	client := NewClientWithOptions(ctx, clickhouse,
+		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
+	)
+
 	redisBuffer, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
 	if err != nil {
 		log.Fatalf("Could not create redis buffer: %s", err)
 	}
 
 	writeAPI := client.Writer(View{
-		Name:    "clickhouse_database.clickhouse_table",
+		Name:    "default.test_integration",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, redisBuffer)
 
@@ -103,6 +148,10 @@ func TestMain(m *testing.M) {
 
 	// You can't defer this because os.Exit doesn't care for defer
 	if err := pool.Purge(resource); err != nil {
+		log.Fatalf("Could not purge resource: %s", err)
+	}
+
+	if err := pool2.Purge(resource2); err != nil {
 		log.Fatalf("Could not purge resource: %s", err)
 	}
 
