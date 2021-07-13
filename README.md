@@ -48,7 +48,7 @@ The "queue" data structure is a good fit for this.
 
 ## Usage
 
-First you need to implement the `Rowable` interface, and your own `Row` structure for formatting the data
+First you need to implement the `Inline` interface, and your own `Row` structure for formatting the data
 
 ```go
 // implement
@@ -58,8 +58,8 @@ type MyRow struct {
 	insertTS time.Time
 }
 
-func (vm MyRow) Row() clikchousebuffer.RowSlice {
-	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
+func (vm MyRow) Row() RowSlice {
+	return RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 ```
 
@@ -97,8 +97,8 @@ You can implement your own data buffer interface: `File`, `Rabbitmq`, `CustomMem
 
 ```go
 type Buffer interface {
-	Write(vector clikchousebuffer.RowSlice)
-	Read() []clikchousebuffer.RowSlice
+	Write(vector RowSlice)
+	Read() []RowSlice
 	Len() int
 	Flush()
 }
@@ -152,7 +152,7 @@ writerBlocking := client.WriterBlocking(api.View{
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 
-err := writerBlocking.WriteRow(ctx, []clikchousebuffer.Inline{
+err := writerBlocking.WriteRow(ctx, []Inline{
     MyRow{
         id: 1, uuid: "1", insertTS: time.Now(),
     },

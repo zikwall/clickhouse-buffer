@@ -38,7 +38,7 @@ func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...buffer.Inline)
 }
 
 func (w *WriterBlockingImpl) write(ctx context.Context, rows []buffer.RowSlice) error {
-	err := w.streamer.WriteBatch(ctx, w.view, NewBatch(rows))
+	err := w.streamer.WriteBatch(ctx, w.view, buffer.NewBatch(rows))
 
 	if err != nil {
 		return err

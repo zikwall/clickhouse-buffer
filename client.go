@@ -9,10 +9,10 @@ type Client interface {
 	// Options returns the options associated with client
 	Options() *Options
 	// HandleStream method for processing data x and sending it to Clickhouse
-	HandleStream(View, *Batch) error
+	HandleStream(View, *buffer.Batch) error
 	// WriteBatch method of sending data to Clickhouse is used implicitly in a non - blocking record,
 	// and explicitly in a blocking record
-	WriteBatch(context.Context, View, *Batch) error
+	WriteBatch(context.Context, View, *buffer.Batch) error
 	// Writer returns the asynchronous, non-blocking, Writer client.
 	// Ensures using a single Writer instance for each table pair.
 	Writer(View, buffer.Buffer) Writer

@@ -21,7 +21,7 @@ type WriterImpl struct {
 	view         View
 	streamer     Client
 	writeBuffer  buffer.Buffer
-	writeCh      chan *Batch
+	writeCh      chan *buffer.Batch
 	errCh        chan error
 	bufferCh     chan buffer.RowSlice
 	bufferFlush  chan struct{}
@@ -38,7 +38,7 @@ func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Option
 		streamer:     client,
 		writeBuffer:  buf,
 		writeOptions: writeOptions,
-		writeCh:      make(chan *Batch),
+		writeCh:      make(chan *buffer.Batch),
 		bufferCh:     make(chan buffer.RowSlice),
 		bufferFlush:  make(chan struct{}),
 		doneCh:       make(chan struct{}),
@@ -110,7 +110,7 @@ func (w *WriterImpl) Close() {
 
 func (w *WriterImpl) flushBuffer() {
 	if w.writeBuffer.Len() > 0 {
-		w.writeCh <- NewBatch(w.writeBuffer.Read())
+		w.writeCh <- buffer.NewBatch(w.writeBuffer.Read())
 		w.writeBuffer.Flush()
 	}
 }
