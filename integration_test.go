@@ -87,7 +87,7 @@ func TestMain(m *testing.M) {
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
 
-	<-time.After(500 * time.Millisecond)
+	<-time.After(600 * time.Millisecond)
 
 	rows := redisBuffer.Read()
 	if len(rows) != 5 {
