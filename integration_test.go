@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	defer cancel()
 
 	client := NewClientWithOptions(ctx, &ClickhouseImplIntegration{},
-		DefaultOptions().SetFlushInterval(500).SetBatchSize(5),
+		DefaultOptions().SetFlushInterval(100).SetBatchSize(5),
 	)
 
 	var db *redis.Client
@@ -75,19 +75,19 @@ func TestMain(m *testing.M) {
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
 	writeAPI.WriteRow(IntegrationRow{
-		id: 1, uuid: "1", insertTS: time.Now(),
+		id: 2, uuid: "2", insertTS: time.Now(),
 	})
 	writeAPI.WriteRow(IntegrationRow{
-		id: 1, uuid: "1", insertTS: time.Now(),
+		id: 3, uuid: "3", insertTS: time.Now(),
 	})
 	writeAPI.WriteRow(IntegrationRow{
-		id: 1, uuid: "1", insertTS: time.Now(),
+		id: 4, uuid: "4", insertTS: time.Now(),
 	})
 	writeAPI.WriteRow(IntegrationRow{
-		id: 1, uuid: "1", insertTS: time.Now(),
+		id: 5, uuid: "5", insertTS: time.Now(),
 	})
 
-	<-time.After(600 * time.Millisecond)
+	<-time.After(300 * time.Millisecond)
 
 	rows := redisBuffer.Read()
 	if len(rows) != 5 {
