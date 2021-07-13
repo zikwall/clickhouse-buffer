@@ -16,15 +16,15 @@ import (
 	"time"
 )
 
-const IntegrationTableName = "default.test_integration_xxx_xxx"
+const integrationTableName = "default.test_integration_xxx_xxx"
 
-type IntegrationRow struct {
+type integrationRow struct {
 	id       int
 	uuid     string
 	insertTS time.Time
 }
 
-func (i IntegrationRow) Row() buffer.RowSlice {
+func (i integrationRow) Row() buffer.RowSlice {
 	return buffer.RowSlice{i.id, i.uuid, i.insertTS.Format(time.RFC822)}
 }
 
@@ -87,14 +87,14 @@ func TestMain(m *testing.M) {
 	}
 
 	// STEP 3: Drop and Create table under certain conditions
-	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", IntegrationTableName))
+	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
 	_, err = ch.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
 			uuid   		String,
 			insert_ts   String
 		) engine=Memory
-	`, IntegrationTableName))
+	`, integrationTableName))
 
 	if err != nil {
 		log.Fatalf("Could create clickhouse table: %s", err)
@@ -111,28 +111,28 @@ func TestMain(m *testing.M) {
 	}
 
 	writeAPI := client.Writer(View{
-		Name:    IntegrationTableName,
+		Name:    integrationTableName,
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, redisBuffer)
 
 	// STEP 5: Write own data to redis
-	writeAPI.WriteRow(IntegrationRow{
+	writeAPI.WriteRow(integrationRow{
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
-	writeAPI.WriteRow(IntegrationRow{
+	writeAPI.WriteRow(integrationRow{
 		id: 2, uuid: "2", insertTS: time.Now(),
 	})
-	writeAPI.WriteRow(IntegrationRow{
+	writeAPI.WriteRow(integrationRow{
 		id: 3, uuid: "3", insertTS: time.Now(),
 	})
-	writeAPI.WriteRow(IntegrationRow{
+	writeAPI.WriteRow(integrationRow{
 		id: 4, uuid: "4", insertTS: time.Now(),
 	})
-	writeAPI.WriteRow(IntegrationRow{
+	writeAPI.WriteRow(integrationRow{
 		id: 5, uuid: "5", insertTS: time.Now(),
 	})
 
-	// STEP 6: Tests
+	// STEP 6: Checks!
 
 	// wait a bit
 	<-time.After(50 * time.Millisecond)
@@ -168,6 +168,8 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed, expected value 3, received %s", v)
 	}
 
+	// STEP 7: Close resources
+
 	code := m.Run()
 
 	// You can't defer this because os.Exit doesn't care for defer
@@ -189,7 +191,7 @@ type clickhouseRowData struct {
 }
 
 func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([]clickhouseRowData, error) {
-	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
+	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", integrationTableName))
 	if err != nil {
 		return nil, err
 	}
