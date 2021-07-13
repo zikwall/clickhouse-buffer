@@ -7,13 +7,38 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/ory/dockertest/v3"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	redis2 "github.com/zikwall/clickhouse-buffer/src/buffer/redis"
 	"log"
 	"os"
 	"testing"
 	"time"
 )
 
+type ClickhouseImplIntegration struct{}
+
+func (ch *ClickhouseImplIntegration) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+	return 0, nil
+}
+
+type IntegrationRow struct {
+	id       int
+	uuid     string
+	insertTS time.Time
+}
+
+func (i IntegrationRow) Row() buffer.RowSlice {
+	return buffer.RowSlice{i.id, i.uuid, i.insertTS.Format(time.RFC822)}
+}
+
 func TestMain(m *testing.M) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	client := NewClientWithOptions(ctx, &ClickhouseImplIntegration{},
+		DefaultOptions().SetFlushInterval(500).SetBatchSize(5),
+	)
+
 	var db *redis.Client
 
 	pool, err := dockertest.NewPool("")
@@ -36,16 +61,39 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	if err := db.Set(context.Background(), "test_key", "test_value", 10*time.Second).Err(); err != nil {
-		log.Fatalf("Could not set value: %s", err)
+	redisBuffer, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
+	if err != nil {
+		log.Fatalf("Could not create redis buffer: %s", err)
 	}
 
-	value := db.Get(context.Background(), "test_key").Val()
-	if value != "test_value" {
-		log.Fatalf("Could not get correct value, received: %s", value)
-	}
+	writeAPI := client.Writer(View{
+		Name:    "clickhouse_database.clickhouse_table",
+		Columns: []string{"id", "uuid", "insert_ts"},
+	}, redisBuffer)
 
-	log.Printf("Received value: %s", value)
+	writeAPI.WriteRow(IntegrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+	writeAPI.WriteRow(IntegrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+	writeAPI.WriteRow(IntegrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+	writeAPI.WriteRow(IntegrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+	writeAPI.WriteRow(IntegrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+
+	<-time.After(500 * time.Millisecond)
+
+	rows := redisBuffer.Read()
+	if len(rows) != 5 {
+		log.Fatalf("Could not get correct valuse, received: %v", rows)
+	}
+	log.Printf("Received value: %v", rows)
 
 	code := m.Run()
 
