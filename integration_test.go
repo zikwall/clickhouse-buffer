@@ -16,11 +16,7 @@ import (
 	"time"
 )
 
-type ClickhouseImplIntegration struct{}
-
-func (ch *ClickhouseImplIntegration) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
-	return 0, nil
-}
+const IntegrationTableName = "default.test_integration_xxx_xxx"
 
 type IntegrationRow struct {
 	id       int
@@ -90,13 +86,14 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	_, err = ch.Exec(`
-		CREATE TABLE IF NOT EXISTS default.test_integration (
+	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF NOT EXISTS %s", IntegrationTableName))
+	_, err = ch.Exec(fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
 			uuid   		String,
 			insert_ts   String
 		) engine=Memory
-	`)
+	`, IntegrationTableName))
 
 	if err != nil {
 		log.Fatalf("Could create clickhouse table: %s", err)
@@ -112,7 +109,7 @@ func TestMain(m *testing.M) {
 	}
 
 	writeAPI := client.Writer(View{
-		Name:    "default.test_integration",
+		Name:    IntegrationTableName,
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, redisBuffer)
 
