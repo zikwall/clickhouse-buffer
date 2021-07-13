@@ -31,6 +31,8 @@ func (i integrationRow) Row() buffer.RowSlice {
 
 // This test is a complete simulation of the work of the buffer bundle (Redis) and the Clickhouse data warehouse
 func TestMain(m *testing.M) {
+	log.Println("RUN INTEGRATION TEST WITH REDIS AND CLICKHOUSE")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

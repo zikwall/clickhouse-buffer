@@ -11,6 +11,8 @@ import (
 )
 
 func TestMemory(t *testing.T) {
+	log.Println("RUN INTEGRATION TEST WITH MEMORY AND CLICKHOUSE")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
