@@ -1,4 +1,4 @@
-package types
+package buffer
 
 import (
 	"reflect"
@@ -6,19 +6,19 @@ import (
 	"time"
 )
 
-type RowMock struct {
+type RowTestMock struct {
 	id       int
 	uuid     string
 	insertTS time.Time
 }
 
-func (vm RowMock) Row() RowSlice {
+func (vm RowTestMock) Row() RowSlice {
 	return RowSlice{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
 }
 
 func TestRow(t *testing.T) {
 	t.Run("it should be success encode to string", func(t *testing.T) {
-		slice := RowMock{
+		slice := RowTestMock{
 			id:       1,
 			uuid:     "uuid_here",
 			insertTS: time.Now(),

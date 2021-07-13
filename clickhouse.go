@@ -1,18 +1,18 @@
-package api
+package clickhousebuffer
 
 import (
 	"context"
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go"
 	"github.com/jmoiron/sqlx"
-	"github.com/zikwall/clickhouse-buffer/src/types"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"log"
 	"strings"
 	"time"
 )
 
 type Clickhouse interface {
-	Insert(context.Context, View, []types.RowSlice) (uint64, error)
+	Insert(context.Context, View, []buffer.RowSlice) (uint64, error)
 }
 
 type View struct {
@@ -34,7 +34,7 @@ type ClickhouseCfg struct {
 	IsDebug  bool
 }
 
-func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*ClickhouseImpl, error) {
+func NewClickhouseWithOptions(cfg *ClickhouseCfg) (Clickhouse, error) {
 	connectionPool, err := sqlx.Open("clickhouse", buildConnectionString(cfg))
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*ClickhouseImpl, error) {
 	return NewClickhouseWithSqlx(connectionPool)
 }
 
-func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (*ClickhouseImpl, error) {
+func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (Clickhouse, error) {
 	if err := connectionPool.Ping(); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
 			return nil, fmt.Errorf("[%d] %s \n%s", exception.Code, exception.Message, exception.StackTrace)
@@ -66,7 +66,7 @@ func (ci *ClickhouseImpl) SetInsertTimeout(timeout uint) {
 // There is no support for user interfaces as well as simple execution of an already prepared request
 // The entire batch bid is implemented through so-called "transactions",
 // although Clickhouse does not support them - it is only a client solution for preparing requests
-func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []types.RowSlice) (uint64, error) {
+func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.RowSlice) (uint64, error) {
 	tx, err := ci.db.Begin()
 
 	if err != nil {
@@ -92,7 +92,6 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []types.Ro
 	}()
 
 	timeoutContext, cancel := context.WithTimeout(ctx, time.Duration(ci.insertTimeout)*time.Millisecond)
-
 	defer cancel()
 
 	var affected uint64

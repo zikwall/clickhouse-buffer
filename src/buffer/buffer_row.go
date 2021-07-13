@@ -1,13 +1,13 @@
-package types
+package buffer
 
 import (
 	"bytes"
 	"encoding/gob"
 )
 
-// Rower interface is an assistant in the correct formation of the order of fields in the data
+// Inline interface is an assistant in the correct formation of the order of fields in the data
 // before sending it to Clickhouse
-type Rower interface {
+type Inline interface {
 	Row() RowSlice
 }
 

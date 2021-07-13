@@ -48,7 +48,7 @@ The "queue" data structure is a good fit for this.
 
 ## Usage
 
-First you need to implement the `Rowable` interface, and your own `Row` structure for formatting the data
+First you need to implement the `Inline` interface, and your own `Row` structure for formatting the data
 
 ```go
 // implement
@@ -58,8 +58,8 @@ type MyRow struct {
 	insertTS time.Time
 }
 
-func (vm MyRow) Row() types.RowSlice {
-	return types.RowSlice{vm.id, vm.uuid, vm.insertTS}
+func (vm MyRow) Row() RowSlice {
+	return RowSlice{vm.id, vm.uuid, vm.insertTS}
 }
 ```
 
@@ -69,7 +69,7 @@ You can use two methods:
  - create a connection to the Clickhouse database from the connection parameters,
 
 ```go
-clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
+clickhouse, _ := clikchousebuffer.NewClickhouseWithOptions(&clikchousebuffer.ClickhouseCfg{
     Address:  "my.clickhouse.host",
     Password: "",
     User:     "default",
@@ -82,14 +82,14 @@ clickhouse, _ := api.NewClickhouseWithOptions(&api.ClickhouseCfg{
 - use an existing connection pool by providing `sqlx.DB`
 
 ```go
-clickhouse, _ := api.NewClickhouseWithSqlx(*sqlx.DB)
+clickhouse, _ := clikchousebuffer.NewClickhouseWithSqlx(*sqlx.DB)
 ```
 
 #### Create main data streamer client and write data
 
 ```go
 client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-	api.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
+    clikchousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
 ```
 
@@ -97,8 +97,8 @@ You can implement your own data buffer interface: `File`, `Rabbitmq`, `CustomMem
 
 ```go
 type Buffer interface {
-	Write(vector types.RowSlice)
-	Read() []types.RowSlice
+	Write(vector RowSlice)
+	Read() []RowSlice
 	Len() int
 	Flush()
 }
@@ -122,7 +122,7 @@ buffer := redis.NewBuffer(
 Now we can write data to the necessary tables in an asynchronous, non-blocking way
 
 ```go
-writeAPI := client.Writer(api.View{
+writeAPI := client.Writer(View{
     Name:    "clickhouse_database.clickhouse_table", 
     Columns: []string{"id", "uuid", "insert_ts"},
 }, buffer)
@@ -147,12 +147,12 @@ go func() {
 Using the blocking writer interface
 
 ```go
-writerBlocking := client.WriterBlocking(api.View{
+writerBlocking := client.WriterBlocking(View{
     Name:    "clickhouse_database.clickhouse_table",
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 
-err := writerBlocking.WriteRow(ctx, []types.Rower{
+err := writerBlocking.WriteRow(ctx, []Inline{
     MyRow{
         id: 1, uuid: "1", insertTS: time.Now(),
     },
@@ -164,3 +164,8 @@ err := writerBlocking.WriteRow(ctx, []types.Rower{
     },
 }...)
 ```
+
+### Tests
+
+- `$ go test -v ./...`
+- `golangci-lint run --config golanci-linter.yml`
