@@ -86,7 +86,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF NOT EXISTS %s", IntegrationTableName))
+	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", IntegrationTableName))
 	_, err = ch.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
