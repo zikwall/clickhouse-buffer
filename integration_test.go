@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	_, err := ch.Exec(`
+	_, err = ch.Exec(`
 		CREATE TABLE IF NOT EXISTS default.test_integration (
 			id        	UInt8,
 			uuid   		String,
