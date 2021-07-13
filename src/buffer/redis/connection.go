@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-redis/redis/v8"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
 const prefix = "ch_buffer"
@@ -12,15 +13,15 @@ func key(bucket string) string {
 	return prefix + ":" + bucket
 }
 
-type Buffer struct {
+type redisBufferImpl struct {
 	client     *redis.Client
 	context    context.Context
 	bucket     string
 	bufferSize int64
 }
 
-func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (*Buffer, error) {
-	return &Buffer{
+func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (buffer.Buffer, error) {
+	return &redisBufferImpl{
 		client:     rdb,
 		context:    ctx,
 		bucket:     key(bucket),
@@ -28,6 +29,6 @@ func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize
 	}, nil
 }
 
-func (rb *Buffer) isContextClosedErr(err error) bool {
+func (rb *redisBufferImpl) isContextClosedErr(err error) bool {
 	return errors.Is(err, redis.ErrClosed) && rb.context.Err() != nil && rb.context.Err() == context.Canceled
 }
