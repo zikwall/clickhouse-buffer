@@ -34,57 +34,18 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var db *redis.Client
-	var ch *sqlx.DB
-	var clickhouse Clickhouse
-
 	// STEP 1: Create Redis service
-	pool, err := dockertest.NewPool("")
+	pool, resource, db, err := useRedisPool()
+
 	if err != nil {
-		log.Fatalf("Could not connect to redis docker: %s", err)
-	}
-
-	resource, err := pool.Run("redis", "6.2", nil)
-	if err != nil {
-		log.Fatalf("Could not start redis resource: %s", err)
-	}
-
-	if err := pool.Retry(func() error {
-		db = redis.NewClient(&redis.Options{
-			Addr: fmt.Sprintf("localhost:%s", resource.GetPort("6379/tcp")),
-		})
-
-		return db.Ping(db.Context()).Err()
-	}); err != nil {
-		log.Fatalf("Could not connect to redis docker: %s", err)
+		log.Fatal(err)
 	}
 
 	// STEP 2: Create Clickhouse service
-	pool2, err := dockertest.NewPool("")
+	pool2, resource2, ch, clickhouse, err := useClickhousePool()
+
 	if err != nil {
-		log.Fatalf("Could not connect to clickhouse docker: %s", err)
-	}
-
-	resource2, err := pool2.Run("yandex/clickhouse-server", "20.8.19.4", nil)
-	if err != nil {
-		log.Fatalf("Could not start clickhouse resource: %s", err)
-	}
-
-	if err := pool2.Retry(func() error {
-		ch, err = sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
-		if err != nil {
-			return err
-		}
-
-		// auto Ping by clickhouse buffer package
-		clickhouse, err = NewClickhouseWithSqlx(ch)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		log.Fatalf("Could not connect to clickhouse docker: %s", err)
+		log.Fatal(err)
 	}
 
 	// STEP 3: Drop and Create table under certain conditions
@@ -172,6 +133,74 @@ func beforeCheckTables(ctx context.Context, ch *sqlx.DB) error {
 	`, integrationTableName))
 
 	return err
+}
+
+func useRedisPool() (*dockertest.Pool, *dockertest.Resource, *redis.Client, error) {
+	pool, err := dockertest.NewPool("")
+
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Could not connect to redis docker: %s", err)
+	}
+
+	resource, err := pool.Run("redis", "6.2", nil)
+
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Could not start redis resource: %s", err)
+	}
+
+	var db *redis.Client
+
+	err = pool.Retry(func() error {
+		db = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("localhost:%s", resource.GetPort("6379/tcp")),
+		})
+
+		return db.Ping(db.Context()).Err()
+	})
+
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Could not connect to redis docker: %s", err)
+	}
+
+	return pool, resource, db, nil
+}
+
+func useClickhousePool() (*dockertest.Pool, *dockertest.Resource, *sqlx.DB, Clickhouse, error) {
+	pool, err := dockertest.NewPool("")
+
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("Could not connect to clickhouse docker: %s", err)
+	}
+
+	resource, err := pool.Run("yandex/clickhouse-server", "20.8.19.4", nil)
+
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("Could not start clickhouse resource: %s", err)
+	}
+
+	var ch *sqlx.DB
+	var clickhouse Clickhouse
+
+	err = pool.Retry(func() error {
+		ch, err = sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
+		if err != nil {
+			return err
+		}
+
+		// auto Ping by clickhouse buffer package
+		clickhouse, err = NewClickhouseWithSqlx(ch)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("Could not connect to clickhouse docker: %s", err)
+	}
+
+	return pool, resource, ch, clickhouse, nil
 }
 
 func useClientAndRedisBuffer(ctx context.Context, clickhouse Clickhouse, db *redis.Client) (Client, buffer.Buffer, error) {
