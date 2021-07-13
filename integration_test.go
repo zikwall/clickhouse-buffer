@@ -164,6 +164,10 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed, expected to get five values, received %d", len(values))
 	}
 
+	if v := values[2].id; v != 3 {
+		log.Fatalf("Failed, expected value 3, received %d", v)
+	}
+
 	if v := values[2].uuid; v != "3" {
 		log.Fatalf("Failed, expected value 3, received %s", v)
 	}
