@@ -122,7 +122,7 @@ buffer := redis.NewBuffer(
 Now we can write data to the necessary tables in an asynchronous, non-blocking way
 
 ```go
-writeAPI := client.Writer(api.View{
+writeAPI := client.Writer(View{
     Name:    "clickhouse_database.clickhouse_table", 
     Columns: []string{"id", "uuid", "insert_ts"},
 }, buffer)
@@ -147,7 +147,7 @@ go func() {
 Using the blocking writer interface
 
 ```go
-writerBlocking := client.WriterBlocking(api.View{
+writerBlocking := client.WriterBlocking(View{
     Name:    "clickhouse_database.clickhouse_table",
     Columns: []string{"id", "uuid", "insert_ts"},
 })
