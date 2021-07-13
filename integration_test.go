@@ -205,11 +205,14 @@ func useClickhousePool() (*dockertest.Pool, *dockertest.Resource, *sqlx.DB, Clic
 	return pool, resource, ch, clickhouse, nil
 }
 
-func useClientAndRedisBuffer(ctx context.Context, clickhouse Clickhouse, db *redis.Client) (Client, buffer.Buffer, error) {
-	client := NewClientWithOptions(ctx, clickhouse,
+func useCommonClient(ctx context.Context, clickhouse Clickhouse) Client {
+	return NewClientWithOptions(ctx, clickhouse,
 		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
 	)
+}
 
+func useClientAndRedisBuffer(ctx context.Context, clickhouse Clickhouse, db *redis.Client) (Client, buffer.Buffer, error) {
+	client := useCommonClient(ctx, clickhouse)
 	buf, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
 
 	if err != nil {
@@ -246,7 +249,7 @@ func writeDataToBuffer(client Client, buf buffer.Buffer) {
 }
 
 func checksBuffer(buf buffer.Buffer) error {
-	// try read from redis buffer before flushing data in storage (Redis)
+	// try read from redis buffer before flushing data in buffer
 	rows := buf.Read()
 
 	if len(rows) != 5 {
@@ -255,10 +258,10 @@ func checksBuffer(buf buffer.Buffer) error {
 
 	log.Printf("Received value from buffer: %v", rows)
 
-	// wait until flush in redis buffer
+	// wait until flush in  buffer
 	<-time.After(500 * time.Millisecond)
 
-	// check redis buffer size
+	// check buffer size
 	if size := buf.Len(); size != 0 {
 		errors.New("Failed, the buffer was expected to be cleared")
 	}

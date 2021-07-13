@@ -51,9 +51,6 @@ func TestMemory(t *testing.T) {
 }
 
 func useClientAndMemoryBuffer(ctx context.Context, clickhouse Clickhouse) (Client, buffer.Buffer) {
-	client := NewClientWithOptions(ctx, clickhouse,
-		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
-	)
-
+	client := useCommonClient(ctx, clickhouse)
 	return client, memory.NewBuffer(client.Options().BatchSize())
 }
