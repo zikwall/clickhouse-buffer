@@ -34,7 +34,7 @@ type ClickhouseCfg struct {
 	IsDebug  bool
 }
 
-func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*ClickhouseImpl, error) {
+func NewClickhouseWithOptions(cfg *ClickhouseCfg) (Clickhouse, error) {
 	connectionPool, err := sqlx.Open("clickhouse", buildConnectionString(cfg))
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func NewClickhouseWithOptions(cfg *ClickhouseCfg) (*ClickhouseImpl, error) {
 	return NewClickhouseWithSqlx(connectionPool)
 }
 
-func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (*ClickhouseImpl, error) {
+func NewClickhouseWithSqlx(connectionPool *sqlx.DB) (Clickhouse, error) {
 	if err := connectionPool.Ping(); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
 			return nil, fmt.Errorf("[%d] %s \n%s", exception.Code, exception.Message, exception.StackTrace)
@@ -92,7 +92,6 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.R
 	}()
 
 	timeoutContext, cancel := context.WithTimeout(ctx, time.Duration(ci.insertTimeout)*time.Millisecond)
-
 	defer cancel()
 
 	var affected uint64
