@@ -172,7 +172,8 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed, expected to get five values, received %d", len(values))
 	}
 
-	if v := values[2][0]; v != 3 || v != "3" {
+	v := values[2][0]
+	if vv, ok := v.(uint8); ok || vv != 3 {
 		log.Fatalf("Failed, expected value 3, received %d", v)
 	}
 
