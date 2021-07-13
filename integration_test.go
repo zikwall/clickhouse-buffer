@@ -93,6 +93,12 @@ func TestMain(m *testing.M) {
 	}
 	log.Printf("Received value: %v", rows)
 
+	<-time.After(500 * time.Millisecond)
+
+	if size := redisBuffer.Len(); size != 0 {
+		log.Fatal("Failed, the buffer was expected to be cleared")
+	}
+
 	code := m.Run()
 
 	// You can't defer this because os.Exit doesn't care for defer
