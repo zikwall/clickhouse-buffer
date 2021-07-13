@@ -28,6 +28,7 @@ func (i IntegrationRow) Row() buffer.RowSlice {
 	return buffer.RowSlice{i.id, i.uuid, i.insertTS.Format(time.RFC822)}
 }
 
+// This test is a complete simulation of the work of the buffer bundle (Redis) and the Clickhouse data warehouse
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,15 +37,15 @@ func TestMain(m *testing.M) {
 	var ch *sqlx.DB
 	var clickhouse Clickhouse
 
-	// REDIS
+	// STEP 1: Create Redis serrvice
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("Could not connect to redis docker: %s", err)
 	}
 
 	resource, err := pool.Run("redis", "6.2", nil)
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		log.Fatalf("Could not start redis resource: %s", err)
 	}
 
 	if err := pool.Retry(func() error {
@@ -54,38 +55,38 @@ func TestMain(m *testing.M) {
 
 		return db.Ping(db.Context()).Err()
 	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("Could not connect to redis docker: %s", err)
 	}
 
-	// CLICKHOUSE
+	// STEP 2: Create Clickhouse service
 	pool2, err := dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("Could not connect to clickhouse docker: %s", err)
 	}
 
 	resource2, err := pool2.Run("yandex/clickhouse-server", "20.8.19.4", nil)
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		log.Fatalf("Could not start clickhouse resource: %s", err)
 	}
 
 	if err := pool2.Retry(func() error {
 		ch, err = sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
-
 		if err != nil {
 			return err
 		}
 
+		// auto Ping by clickhouse buffer package
 		clickhouse, err = NewClickhouseWithSqlx(ch)
-
 		if err != nil {
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("Could not connect to clickhouse docker: %s", err)
 	}
 
+	// STEP 3: Drop and Create table under certain conditions
 	_, _ = ch.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", IntegrationTableName))
 	_, err = ch.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
@@ -99,6 +100,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could create clickhouse table: %s", err)
 	}
 
+	// STEP 4: Create clickhouse client and buffer writer with redis buffer
 	client := NewClientWithOptions(ctx, clickhouse,
 		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
 	)
@@ -113,6 +115,7 @@ func TestMain(m *testing.M) {
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, redisBuffer)
 
+	// STEP 5: Write own data to redis
 	writeAPI.WriteRow(IntegrationRow{
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
@@ -129,43 +132,30 @@ func TestMain(m *testing.M) {
 		id: 5, uuid: "5", insertTS: time.Now(),
 	})
 
+	// STEP 6: Tests
+
+	// wait a bit
 	<-time.After(50 * time.Millisecond)
 
+	// try read from redis buffer before flushing data in storage (Redis)
 	rows := redisBuffer.Read()
 	if len(rows) != 5 {
 		log.Fatalf("Could not get correct valuse, received: %v", rows)
 	}
 	log.Printf("Received value: %v", rows)
 
+	// wait until flush in redis buffer
 	<-time.After(500 * time.Millisecond)
 
+	// check redis buffer size
 	if size := redisBuffer.Len(); size != 0 {
 		log.Fatal("Failed, the buffer was expected to be cleared")
 	}
 
-	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
+	// check data in clickhouse, write after flushing
+	values, err := fetchClickhouseRows(ctx, ch)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer rws.Close()
-
-	var values [][]interface{}
-	for rws.Next() {
-		var (
-			id        uint8
-			uuid      string
-			createdAt string
-		)
-
-		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
-			log.Fatal(err)
-		}
-
-		values = append(values, []interface{}{id, uuid, createdAt})
-	}
-
-	if err := rws.Err(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not fetch data from clickhouse: %s", err)
 	}
 
 	log.Printf("Received values from clickhouse table: %v", values)
@@ -190,6 +180,35 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(code)
+}
+
+func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([][]interface{}, error) {
+	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
+	if err != nil {
+		return nil, err
+	}
+	defer rws.Close()
+
+	var values [][]interface{}
+	for rws.Next() {
+		var (
+			id        uint8
+			uuid      string
+			createdAt string
+		)
+
+		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
+			return nil, err
+		}
+
+		values = append(values, []interface{}{id, uuid, createdAt})
+	}
+
+	if err := rws.Err(); err != nil {
+		return nil, err
+	}
+
+	return values, err
 }
 
 func TestSomething(t *testing.T) {
