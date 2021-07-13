@@ -169,13 +169,15 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	if len(values) != 3 {
+	if len(values) != 5 {
 		log.Fatalf("Failed, expected to get three values, received %d", len(values))
 	}
 
 	if v := values[2][0]; v != 3 {
 		log.Fatalf("Failed, expected to value 3, received %d", v)
 	}
+
+	log.Printf("Received values from clickhouse table: %v", values)
 
 	code := m.Run()
 
