@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if err := pool2.Retry(func() error {
-		ch, err := sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
+		ch, err = sqlx.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
 
 		if err != nil {
 			return err
@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	_, err = ch.Exec(`
+	_, err := ch.Exec(`
 		CREATE TABLE IF NOT EXISTS default.test_integration (
 			id        	UInt8,
 			uuid   		String,
