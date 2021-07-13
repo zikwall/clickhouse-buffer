@@ -143,7 +143,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("Failed, the buffer was expected to be cleared")
 	}
 
-	rws, err := ch.Query(fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
+	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", IntegrationTableName))
 	if err != nil {
 		log.Fatal(err)
 	}
