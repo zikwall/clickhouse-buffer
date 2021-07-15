@@ -30,6 +30,7 @@ func TestMemory(t *testing.T) {
 
 	// STEP 4: Create clickhouse client and buffer writer with redis buffer
 	client, memBuffer := useClientAndMemoryBuffer(ctx, clickhouse)
+	defer client.Close()
 
 	// STEP 5: Write own data to redis
 	writeDataToBuffer(client, memBuffer)

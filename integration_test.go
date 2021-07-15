@@ -57,6 +57,7 @@ func TestMain(m *testing.M) {
 
 	// STEP 4: Create clickhouse client and buffer writer with redis buffer
 	client, redisBuffer, err := useClientAndRedisBuffer(ctx, clickhouse, db)
+	defer client.Close()
 
 	if err != nil {
 		log.Fatal(err)
