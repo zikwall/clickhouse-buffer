@@ -94,6 +94,12 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	if impl, ok := clickhouse.(*ClickhouseImpl); ok {
+		impl.SetInsertTimeout(500)
+	}
+
+	<-time.After(600 * time.Millisecond)
+
 	if len(errors) != 1 {
 		log.Fatalf("Failed, the clickhouse was expected receive one error, received: %d", len(errors))
 	}
