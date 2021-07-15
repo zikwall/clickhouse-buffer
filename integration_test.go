@@ -72,7 +72,6 @@ func TestMain(m *testing.M) {
 	go func() {
 		for err := range errorsCh {
 			errors = append(errors, err)
-			log.Println(err)
 		}
 	}()
 
@@ -89,15 +88,19 @@ func TestMain(m *testing.M) {
 
 	// retry test fails
 	dropTable(ctx, ch)
+	// downgrade timeout for insert, this is necessary because we are waiting for a very long time (15s default)
+	// but since we deleted the table, we don't need to wait that long
+	if impl, ok := clickhouse.(*ClickhouseImpl); ok {
+		impl.SetInsertTimeout(500)
+	}
+
+	// it should be successful case
 	writeDataToBuffer(writeAPI)
 	if err := checksBuffer(redisBuffer); err != nil {
 		log.Fatal(err)
 	}
 
-	if impl, ok := clickhouse.(*ClickhouseImpl); ok {
-		impl.SetInsertTimeout(500)
-	}
-
+	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
 	<-time.After(600 * time.Millisecond)
 
 	if len(errors) != 1 {
