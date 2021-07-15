@@ -87,6 +87,19 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	// retry test fails
+	dropTable(ctx, ch)
+	writeDataToBuffer(writeAPI)
+	if err := checksBuffer(redisBuffer); err != nil {
+		log.Fatal(err)
+	}
+
+	if len(errors) != 1 {
+		log.Fatalf("Failed, the clickhouse was expected receive one error, received: %d", len(errors))
+	}
+
+	log.Println("Received errors from clickhouse insert:", errors)
+
 	// STEP 7: Close resources
 	code := m.Run()
 
