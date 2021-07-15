@@ -33,7 +33,8 @@ func TestMemory(t *testing.T) {
 	defer client.Close()
 
 	// STEP 5: Write own data to redis
-	writeDataToBuffer(client, memBuffer)
+	writeAPI := useWriteApi(client, memBuffer)
+	writeDataToBuffer(writeAPI)
 
 	// STEP 6: Checks!
 	if err := checksBuffer(memBuffer); err != nil {
