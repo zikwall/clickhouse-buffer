@@ -62,8 +62,20 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	defer client.Close()
+
 	// STEP 5: Write own data to redis
-	writeDataToBuffer(client, redisBuffer)
+	writeAPI := useWriteApi(client, redisBuffer)
+
+	var errors []error
+	errorsCh := writeAPI.Errors()
+	go func() {
+		for err := range errorsCh {
+			errors = append(errors, err)
+		}
+	}()
+
+	writeDataToBuffer(writeAPI)
 
 	// STEP 6: Checks!
 	if err := checksBuffer(redisBuffer); err != nil {
@@ -73,6 +85,29 @@ func TestMain(m *testing.M) {
 	if err := checksClickhouse(ctx, ch); err != nil {
 		log.Fatal(err)
 	}
+
+	// retry test fails
+	dropTable(ctx, ch)
+	// downgrade timeout for insert, this is necessary because we are waiting for a very long time (15s default)
+	// but since we deleted the table, we don't need to wait that long
+	if impl, ok := clickhouse.(*ClickhouseImpl); ok {
+		impl.SetInsertTimeout(500)
+	}
+
+	// it should be successful case
+	writeDataToBuffer(writeAPI)
+	if err := checksBuffer(redisBuffer); err != nil {
+		log.Fatal(err)
+	}
+
+	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
+	<-time.After(600 * time.Millisecond)
+
+	if len(errors) != 1 {
+		log.Fatalf("Failed, the clickhouse was expected receive one error, received: %d", len(errors))
+	}
+
+	log.Println("Received errors from clickhouse insert:", errors)
 
 	// STEP 7: Close resources
 	code := m.Run()
@@ -125,7 +160,15 @@ func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([]clickhouseRowData,
 }
 
 func beforeCheckTables(ctx context.Context, ch *sqlx.DB) error {
+	dropTable(ctx, ch)
+	return createTable(ctx, ch)
+}
+
+func dropTable(ctx context.Context, ch *sqlx.DB) {
 	_, _ = ch.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
+}
+
+func createTable(ctx context.Context, ch *sqlx.DB) error {
 	_, err := ch.ExecContext(ctx, fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
@@ -133,7 +176,6 @@ func beforeCheckTables(ctx context.Context, ch *sqlx.DB) error {
 			insert_ts   String
 		) engine=Memory
 	`, integrationTableName))
-
 	return err
 }
 
@@ -222,12 +264,15 @@ func useClientAndRedisBuffer(ctx context.Context, clickhouse Clickhouse, db *red
 	return client, buf, nil
 }
 
-func writeDataToBuffer(client Client, buf buffer.Buffer) {
+func useWriteApi(client Client, buf buffer.Buffer) Writer {
 	writeAPI := client.Writer(View{
 		Name:    integrationTableName,
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, buf)
+	return writeAPI
+}
 
+func writeDataToBuffer(writeAPI Writer) {
 	writeAPI.WriteRow(integrationRow{
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
