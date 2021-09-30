@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -137,24 +138,28 @@ func insertQuery(table string, cols []string) string {
 	return prepared
 }
 
-func buildConnectionString(cfg *ClickhouseCfg) string {
-	debug := "false"
+func buildConnectionString(c *ClickhouseCfg) string {
+	u := url.URL{
+		Scheme: "tcp",
+		Host:   c.Address + ":9000",
+	}
 
-	if cfg.IsDebug {
+	debug := "false"
+	if c.IsDebug {
 		debug = "true"
 	}
-	build := fmt.Sprintf(
-		"tcp://%s:9000?debug=%s&username=%s&password=%s&database=%s",
-		cfg.Address,
-		debug,
-		cfg.User,
-		cfg.Password,
-		cfg.Database,
-	)
 
-	if len(cfg.AltHosts) > 0 {
-		build = fmt.Sprintf("%s&alt_hosts=%s", build, cfg.AltHosts)
+	q := u.Query()
+	q.Set("debug", debug)
+	q.Set("username", c.User)
+	q.Set("password", c.Password)
+	q.Set("database", c.Database)
+
+	if len(c.AltHosts) > 0 {
+		q.Set("alt_hosts", c.AltHosts)
 	}
 
-	return build
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
