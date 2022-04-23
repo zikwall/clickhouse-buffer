@@ -20,6 +20,8 @@ type Client interface {
 	// WriterBlocking returns the synchronous, blocking, WriterBlocking client.
 	// Ensures using a single WriterBlocking instance for each table pair.
 	WriterBlocking(View) WriterBlocking
+	// RetryClient Get retry client
+	RetryClient() Retryable
 	// Close ensures all ongoing asynchronous write clients finish.
 	Close()
 }

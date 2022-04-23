@@ -39,12 +39,18 @@ Asynchronous write client is recommended for frequent periodic writes.
 
 #### Writes are automatically retried on server back pressure
 
-In the future, it is necessary to implement an interface, and a mechanism for sending "rejected" packets, 
-with the ability to control the number of retries, the intervals between retries. 
-The "queue" data structure is a good fit for this.
+There is also the possibility of resending "broken" or for some reason not sent packets. 
+By default, packet resending is disabled, to enable it, you need to call `(*Options).SetRetryIsEnabled(true)`.
 
-- [ ] in-memory queue
-- [ ] redis queue
+```go
+// example with default options
+DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true)
+```
+
+- [x] in-memory queue
+- [ ] Redis
+- [ ] RabbitMQ
+- [ ] Kafka
 
 ## Usage
 
@@ -169,6 +175,24 @@ err := writerBlocking.WriteRow(ctx, []Inline{
     },
 }...)
 ```
+
+### Logs
+
+You can implement your logger by simply implementing the Logger interface and throwing it in options:
+
+```go
+type Logger interface {
+	Log(message interface{})
+	Logf(format string, v ...interface{})
+}
+```
+
+```go
+// example with default options
+DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
+```
+
+###### TODO: log levels: info, warning, error, fatal
 
 ### Tests
 

@@ -1,6 +1,8 @@
 package clickhousebuffer
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
@@ -107,6 +109,9 @@ func (w *WriterImpl) Close() {
 			w.errCh = nil
 		}
 	}
+	if w.writeOptions.isDebug {
+		log.Println(fmt.Sprintf("close writer %s", w.view.Name))
+	}
 }
 
 func (w *WriterImpl) flushBuffer() {
@@ -118,7 +123,6 @@ func (w *WriterImpl) flushBuffer() {
 
 func (w *WriterImpl) listenBufferWrite() {
 	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
-
 	for {
 		select {
 		case vector := <-w.bufferCh:

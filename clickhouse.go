@@ -3,7 +3,6 @@ package clickhousebuffer
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -15,10 +14,7 @@ import (
 )
 
 const (
-	defaultInsertTimeout   = 15000
-	defaultMaxIdleConns    = 20
-	defaultMaxOpenConns    = 21
-	defaultConnMaxLifetime = time.Minute * 5
+	defaultInsertTimeout = 15000
 )
 
 type Clickhouse interface {
@@ -35,6 +31,7 @@ type View struct {
 type ClickhouseImpl struct {
 	db            *sqlx.DB
 	insertTimeout uint
+	logger        Logger
 }
 
 type ClickhouseCfg struct {
@@ -44,35 +41,6 @@ type ClickhouseCfg struct {
 	Database string
 	AltHosts string
 	IsDebug  bool
-}
-
-type ClickhouseOpt struct {
-	maxIdleConns    int
-	maxOpenConns    int
-	connMaxLifetime time.Duration
-}
-
-type Option func(e *ClickhouseOpt)
-
-// WithMaxIdleConns set `maxIdleConns` to ClickhouseOpt
-func WithMaxIdleConns(maxIdleConns int) Option {
-	return func(opt *ClickhouseOpt) {
-		opt.maxIdleConns = maxIdleConns
-	}
-}
-
-// WithMaxOpenConns set `maxOpenConns` to ClickhouseOpt
-func WithMaxOpenConns(maxOpenConns int) Option {
-	return func(opt *ClickhouseOpt) {
-		opt.maxOpenConns = maxOpenConns
-	}
-}
-
-// WithConnMaxLifetime set `maxIdleConns` to ClickhouseOpt
-func WithConnMaxLifetime(connMaxLifetime time.Duration) Option {
-	return func(opt *ClickhouseOpt) {
-		opt.connMaxLifetime = connMaxLifetime
-	}
 }
 
 func NewClickhouseWithOptions(ctx context.Context, cfg *ClickhouseCfg, options ...Option) (Clickhouse, error) {
@@ -140,13 +108,13 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.R
 		// If you do not call the rollback function there will be a memory leak and goroutine
 		// Such a leak can occur if there is no access to the table or there is no table itself
 		if err := tx.Rollback(); err != nil {
-			log.Println(err)
+			ci.logger.Log(err)
 		}
 		return 0, err
 	}
 	defer func() {
 		if err := stmt.Close(); err != nil {
-			log.Println(err)
+			ci.logger.Log(err)
 		}
 	}()
 
@@ -159,7 +127,7 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.R
 		if _, err := stmt.ExecContext(timeoutContext, row...); err == nil {
 			affected++
 		} else {
-			log.Println(err)
+			ci.logger.Log(err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
