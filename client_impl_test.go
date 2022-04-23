@@ -3,22 +3,41 @@ package clickhousebuffer
 import (
 	"context"
 	"fmt"
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
 	"testing"
 	"time"
+
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type ClickhouseImplMock struct{}
 
-func (ch *ClickhouseImplMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (c *ClickhouseImplMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, nil
+}
+
+func (c *ClickhouseImplMock) Close() error {
+	return nil
+}
+
+func (c *ClickhouseImplMock) GetConnection() *sqlx.DB {
+	return nil
 }
 
 type ClickhouseImplErrMock struct{}
 
-func (ch *ClickhouseImplErrMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (ce *ClickhouseImplErrMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, fmt.Errorf("test error")
+}
+
+func (ce *ClickhouseImplErrMock) Close() error {
+	return nil
+}
+
+func (ce *ClickhouseImplErrMock) GetConnection() *sqlx.DB {
+	return nil
 }
 
 type RowMock struct {
@@ -38,14 +57,12 @@ func TestClientImpl_HandleStream(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	defer cancel()
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplMock{},
 			DefaultOptions().SetFlushInterval(200).SetBatchSize(3),
 		)
-
 		defer client.Close()
 
 		memoryBuffer := memory.NewBuffer(
@@ -74,7 +91,6 @@ func TestClientImpl_HandleStream(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
 			DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
 		)
-
 		defer client.Close()
 
 		memoryBuffer := memory.NewBuffer(
@@ -82,7 +98,6 @@ func TestClientImpl_HandleStream(t *testing.T) {
 		)
 
 		writeAPI := client.Writer(tableView, memoryBuffer)
-
 		var errors []error
 		errorsCh := writeAPI.Errors()
 		// Create go proc for reading and storing errors
@@ -121,7 +136,6 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	defer cancel()
 
 	t.Run("it should be correct send data", func(t *testing.T) {
@@ -132,7 +146,6 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 		defer client.Close()
 
 		writerBlocking := client.WriterBlocking(tableView)
-
 		err := writerBlocking.WriteRow(ctx, []buffer.Inline{
 			RowMock{
 				id: 1, uuid: "1", insertTS: time.Now(),
@@ -144,7 +157,6 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 				id: 1, uuid: "1", insertTS: time.Now(),
 			},
 		}...)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,11 +166,9 @@ func TestClientImpl_WriteBatch(t *testing.T) {
 		client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
 			DefaultOptions().SetFlushInterval(10).SetBatchSize(1),
 		)
-
 		defer client.Close()
 
 		writerBlocking := client.WriterBlocking(tableView)
-
 		err := writerBlocking.WriteRow(ctx, []buffer.Inline{
 			RowMock{
 				id: 1, uuid: "1", insertTS: time.Now(),

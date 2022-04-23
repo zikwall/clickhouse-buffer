@@ -52,14 +52,14 @@ First you need to implement the `Inline` interface, and your own `Row` structure
 
 ```go
 // implement
-type MyRow struct {
+type MyTableRow struct {
 	id       int
 	uuid     string
 	insertTS time.Time
 }
 
-func (vm MyRow) Row() RowSlice {
-	return RowSlice{vm.id, vm.uuid, vm.insertTS}
+func (t *MyTableRow) Row() RowSlice {
+	return RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
 }
 ```
 
@@ -69,26 +69,31 @@ You can use two methods:
  - create a connection to the Clickhouse database from the connection parameters,
 
 ```go
-clickhouse, _ := clikchousebuffer.NewClickhouseWithOptions(&clikchousebuffer.ClickhouseCfg{
-    Address:  "my.clickhouse.host",
-    Password: "",
-    User:     "default",
-    Database: "default",
-    AltHosts: "my.clickhouse.host2,my.clickhouse.host3:9003,my.clickhouse.host4",
-    IsDebug:  true,
-})
+ch, err := clickhousebuffer.NewClickhouseWithOptions(ctx,
+    &clickhousebuffer.ClickhouseCfg{
+        Address:  ctx.String("clickhouse-address"),
+        User:     ctx.String("clickhouse-user"),
+        Password: ctx.String("clickhouse-password"),
+        Database: ctx.String("clickhouse-database"),
+        AltHosts: ctx.String("clickhouse-alt-hosts"),
+        IsDebug:  ctx.Bool("debug"),
+    },
+    clickhousebuffer.WithMaxIdleConns(20),
+    clickhousebuffer.WithMaxOpenConns(21),
+    clickhousebuffer.WithConnMaxLifetime(time.Minute*5),
+)
 ```
 
 - use an existing connection pool by providing `sqlx.DB`
 
 ```go
-clickhouse, _ := clikchousebuffer.NewClickhouseWithSqlx(*sqlx.DB)
+clickhouse, _ := clikchousebuffer.NewClickhouseWithSqlx(conn *sqlx.DB)
 ```
 
 #### Create main data streamer client and write data
 
 ```go
-client := NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
+client := NewClientWithOptions(ctx, clickhouseConn,
     clikchousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
 ```
@@ -128,7 +133,7 @@ writeAPI := client.Writer(View{
 }, buffer)
 
 // write your data
-writeAPI.WriteRow(MyRow{
+writeAPI.WriteRow(MyTableRow{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 ```
@@ -153,13 +158,13 @@ writerBlocking := client.WriterBlocking(View{
 })
 
 err := writerBlocking.WriteRow(ctx, []Inline{
-    MyRow{
+    {
         id: 1, uuid: "1", insertTS: time.Now(),
     },
-    MyRow{
+    {
         id: 2, uuid: "2", insertTS: time.Now(),
     },
-    MyRow{
+    {
         id: 3, uuid: "3", insertTS: time.Now(),
     },
 }...)
@@ -169,4 +174,4 @@ err := writerBlocking.WriteRow(ctx, []Inline{
 
 - `$ go test -v ./...`
 - `$ go test -v ./... -tags=integration`
-- `golangci-lint run --config golanci-linter.yml`
+- `$ golangci-lint run --config ./.golangci.yml`

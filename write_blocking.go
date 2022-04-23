@@ -2,6 +2,7 @@ package clickhousebuffer
 
 import (
 	"context"
+
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
@@ -18,10 +19,11 @@ type WriterBlockingImpl struct {
 }
 
 func NewWriterBlocking(streamer Client, view View) WriterBlocking {
-	return &WriterBlockingImpl{
+	w := &WriterBlockingImpl{
 		view:     view,
 		streamer: streamer,
 	}
+	return w
 }
 
 func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...buffer.Inline) error {
@@ -30,19 +32,15 @@ func (w *WriterBlockingImpl) WriteRow(ctx context.Context, row ...buffer.Inline)
 		for _, r := range row {
 			rows = append(rows, r.Row())
 		}
-
 		return w.write(ctx, rows)
 	}
-
 	return nil
 }
 
 func (w *WriterBlockingImpl) write(ctx context.Context, rows []buffer.RowSlice) error {
 	err := w.streamer.WriteBatch(ctx, w.view, buffer.NewBatch(rows))
-
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
