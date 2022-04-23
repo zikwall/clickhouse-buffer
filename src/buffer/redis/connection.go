@@ -3,8 +3,10 @@ package redis
 import (
 	"context"
 	"errors"
-	"github.com/go-redis/redis/v8"
+
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
+
+	"github.com/go-redis/redis/v8"
 )
 
 const prefix = "ch_buffer"

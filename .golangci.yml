@@ -33,13 +33,13 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    #- funlen
+    - funlen
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
-    #- gofmt
-    #- goimports
+    - gofmt
+    - goimports
     - golint
     - gosec
     - gosimple

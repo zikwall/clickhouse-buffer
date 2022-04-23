@@ -2,6 +2,7 @@ package clickhousebuffer
 
 import (
 	"context"
+
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 

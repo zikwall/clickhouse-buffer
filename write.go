@@ -1,8 +1,9 @@
 package clickhousebuffer
 
 import (
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"time"
+
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
 // Writer is client interface with non-blocking methods for writing rows asynchronously in batches into an Clickhouse server.
@@ -15,6 +16,8 @@ type Writer interface {
 	Flush()
 	// Errors returns a channel for reading errors which occurs during async writes.
 	Errors() <-chan error
+	// Close writer
+	Close()
 }
 
 type WriterImpl struct {
@@ -45,10 +48,8 @@ func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Option
 		bufferStop:   make(chan struct{}),
 		writeStop:    make(chan struct{}),
 	}
-
 	go w.listenBufferWrite()
 	go w.listenStreamWrite()
-
 	return w
 }
 

@@ -2,9 +2,10 @@ package clickhousebuffer
 
 import (
 	"context"
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"log"
 	"sync"
+
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
 type clientImpl struct {
@@ -28,7 +29,6 @@ func NewClientWithOptions(ctx context.Context, clickhouse Clickhouse, options *O
 		writeAPIs:     map[string]Writer{},
 		syncWriteAPIs: map[string]WriterBlocking{},
 	}
-
 	return client
 }
 
@@ -64,17 +64,12 @@ func (cs *clientImpl) Close() {
 	cs.mu.RLock()
 	apisSnapshot := cs.writeAPIs
 	cs.mu.RUnlock()
-
 	for key, w := range apisSnapshot {
-		if wa, ok := w.(*WriterImpl); ok {
-			wa.Close()
-		}
-
+		w.Close()
 		cs.mu.Lock()
 		delete(cs.writeAPIs, key)
 		cs.mu.Unlock()
 	}
-
 	cs.mu.Lock()
 	for key := range cs.syncWriteAPIs {
 		delete(cs.syncWriteAPIs, key)
@@ -90,7 +85,6 @@ func (cs *clientImpl) HandleStream(view View, btc *buffer.Batch) error {
 		log.Println(err)
 		return err
 	}
-
 	return nil
 }
 
