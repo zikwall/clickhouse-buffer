@@ -35,7 +35,12 @@ func NewClientWithOptions(ctx context.Context, clickhouse Clickhouse, options *O
 		logger:        options.logger,
 	}
 	if options.isRetryEnabled {
-		client.retry = NewRetry(ctx, NewDefaultWriter(clickhouse), options.logger, options.isDebug)
+		if options.queue == nil {
+			options.queue = newImMemoryQueueEngine()
+		}
+		client.retry = NewRetry(
+			ctx, options.queue, NewDefaultWriter(clickhouse), options.logger, options.isDebug,
+		)
 	}
 	return client
 }
@@ -69,19 +74,16 @@ func (cs *clientImpl) WriterBlocking(view View) WriterBlocking {
 func (cs *clientImpl) Close() {
 	if cs.options.isDebug {
 		cs.logger.Log("close clickhouse buffer client")
-	}
-	cs.mu.RLock()
-	apisSnapshot := cs.writeAPIs
-	cs.mu.RUnlock()
-	if cs.options.isDebug {
 		cs.logger.Log("close async writers")
 	}
-	for key, w := range apisSnapshot {
+	// Closing and destroying all asynchronous writers
+	cs.mu.Lock()
+	for key, w := range cs.writeAPIs {
 		w.Close()
-		cs.mu.Lock()
 		delete(cs.writeAPIs, key)
-		cs.mu.Unlock()
 	}
+	cs.mu.Unlock()
+	// Closing and destroying all synchronous writers
 	if cs.options.isDebug {
 		cs.logger.Log("close sync writers")
 	}
@@ -95,8 +97,10 @@ func (cs *clientImpl) Close() {
 func (cs *clientImpl) HandleStream(view View, btc *buffer.Batch) error {
 	err := cs.WriteBatch(cs.context, view, btc)
 	if err != nil {
+		// If there is an acceptable error and if the functionality of resending data is activated,
+		// try to repeat the operation
 		if cs.options.isRetryEnabled && isResendAvailable(err) {
-			cs.retry.Queue(&retryPacket{
+			cs.retry.Retry(&retryPacket{
 				view: view,
 				btc:  btc,
 			})

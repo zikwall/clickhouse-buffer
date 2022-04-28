@@ -47,10 +47,25 @@ By default, packet resending is disabled, to enable it, you need to call `(*Opti
 DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true)
 ```
 
-- [x] in-memory queue
+- [x] in-memory queue by default
 - [ ] Redis
 - [ ] RabbitMQ
 - [ ] Kafka
+
+You can implement queue engine by defining the `Queueable` interface:
+
+```go
+type Queueable interface {
+	Queue(packet *retryPacket)
+	Retries() <-chan *retryPacket
+}
+```
+
+and set it as an engine:
+
+```go
+DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
+```
 
 ## Usage
 

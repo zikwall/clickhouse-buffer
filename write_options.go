@@ -12,6 +12,8 @@ type Options struct {
 	isRetryEnabled bool
 	// Logger with
 	logger Logger
+	// Queueable with
+	queue Queueable
 }
 
 // BatchSize returns size of batch
@@ -48,6 +50,11 @@ func (o *Options) SetRetryIsEnabled(enabled bool) *Options {
 
 func (o *Options) SetLogger(logger Logger) *Options {
 	o.logger = logger
+	return o
+}
+
+func (o *Options) SetQueueEngine(queue Queueable) *Options {
+	o.queue = queue
 	return o
 }
 

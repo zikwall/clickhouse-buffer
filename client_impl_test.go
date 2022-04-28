@@ -215,7 +215,7 @@ func TestClientImplHandleStream(t *testing.T) {
 		})
 		simulateWait(time.Nanosecond * 6000)
 		mock.hasErr = true
-		simulateWait(time.Millisecond * 550)
+		simulateWait(time.Millisecond * 1000)
 		if len(errors) != 1 {
 			t.Fatalf("failed, expected to get one error, received %d", len(errors))
 		}
