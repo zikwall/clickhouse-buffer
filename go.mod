@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
+	github.com/Rican7/retry v0.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/ory/dockertest/v3 v3.7.0

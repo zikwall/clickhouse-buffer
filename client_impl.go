@@ -2,7 +2,6 @@ package clickhousebuffer
 
 import (
 	"context"
-	"log"
 	"sync"
 
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
@@ -15,6 +14,8 @@ type clientImpl struct {
 	writeAPIs     map[string]Writer
 	syncWriteAPIs map[string]WriterBlocking
 	mu            sync.RWMutex
+	retry         Retryable
+	logger        Logger
 }
 
 func NewClient(ctx context.Context, clickhouse Clickhouse) Client {
@@ -22,12 +23,24 @@ func NewClient(ctx context.Context, clickhouse Clickhouse) Client {
 }
 
 func NewClientWithOptions(ctx context.Context, clickhouse Clickhouse, options *Options) Client {
+	if options.logger == nil {
+		options.logger = newDefaultLogger()
+	}
 	client := &clientImpl{
 		context:       ctx,
 		clickhouse:    clickhouse,
 		options:       options,
 		writeAPIs:     map[string]Writer{},
 		syncWriteAPIs: map[string]WriterBlocking{},
+		logger:        options.logger,
+	}
+	if options.isRetryEnabled {
+		if options.queue == nil {
+			options.queue = newImMemoryQueueEngine()
+		}
+		client.retry = NewRetry(
+			ctx, options.queue, NewDefaultWriter(clickhouse), options.logger, options.isDebug,
+		)
 	}
 	return client
 }
@@ -44,7 +57,6 @@ func (cs *clientImpl) Writer(view View, buf buffer.Buffer) Writer {
 	}
 	writer := cs.writeAPIs[key]
 	cs.mu.Unlock()
-
 	return writer
 }
 
@@ -56,19 +68,24 @@ func (cs *clientImpl) WriterBlocking(view View) WriterBlocking {
 	}
 	writer := cs.syncWriteAPIs[key]
 	cs.mu.Unlock()
-
 	return writer
 }
 
 func (cs *clientImpl) Close() {
-	cs.mu.RLock()
-	apisSnapshot := cs.writeAPIs
-	cs.mu.RUnlock()
-	for key, w := range apisSnapshot {
+	if cs.options.isDebug {
+		cs.logger.Log("close clickhouse buffer client")
+		cs.logger.Log("close async writers")
+	}
+	// Closing and destroying all asynchronous writers
+	cs.mu.Lock()
+	for key, w := range cs.writeAPIs {
 		w.Close()
-		cs.mu.Lock()
 		delete(cs.writeAPIs, key)
-		cs.mu.Unlock()
+	}
+	cs.mu.Unlock()
+	// Closing and destroying all synchronous writers
+	if cs.options.isDebug {
+		cs.logger.Log("close sync writers")
 	}
 	cs.mu.Lock()
 	for key := range cs.syncWriteAPIs {
@@ -80,15 +97,24 @@ func (cs *clientImpl) Close() {
 func (cs *clientImpl) HandleStream(view View, btc *buffer.Batch) error {
 	err := cs.WriteBatch(cs.context, view, btc)
 	if err != nil {
-		// In the future, you need to add the possibility of repeating failed packets,
-		// with limits and repetition intervals
-		log.Println(err)
+		// If there is an acceptable error and if the functionality of resending data is activated,
+		// try to repeat the operation
+		if cs.options.isRetryEnabled && isResendAvailable(err) {
+			cs.retry.Retry(&retryPacket{
+				view: view,
+				btc:  btc,
+			})
+		}
 		return err
 	}
 	return nil
 }
 
-func (cs *clientImpl) WriteBatch(ctx context.Context, view View, btc *buffer.Batch) error {
-	_, err := cs.clickhouse.Insert(ctx, view, btc.Rows())
+func (cs *clientImpl) WriteBatch(ctx context.Context, view View, batch *buffer.Batch) error {
+	_, err := cs.clickhouse.Insert(ctx, view, batch.Rows())
 	return err
+}
+
+func (cs *clientImpl) RetryClient() Retryable {
+	return cs.retry
 }
