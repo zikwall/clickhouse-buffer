@@ -1,7 +1,6 @@
 package clickhousebuffer
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -110,7 +109,7 @@ func (w *WriterImpl) Close() {
 		}
 	}
 	if w.writeOptions.isDebug {
-		log.Println(fmt.Sprintf("close writer %s", w.view.Name))
+		log.Printf("close writer %s", w.view.Name)
 	}
 }
 

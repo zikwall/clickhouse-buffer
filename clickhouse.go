@@ -3,6 +3,7 @@ package clickhousebuffer
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -31,7 +32,6 @@ type View struct {
 type ClickhouseImpl struct {
 	db            *sqlx.DB
 	insertTimeout uint
-	logger        Logger
 }
 
 type ClickhouseCfg struct {
@@ -108,13 +108,13 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.R
 		// If you do not call the rollback function there will be a memory leak and goroutine
 		// Such a leak can occur if there is no access to the table or there is no table itself
 		if err := tx.Rollback(); err != nil {
-			ci.logger.Log(err)
+			log.Println(err)
 		}
 		return 0, err
 	}
 	defer func() {
 		if err := stmt.Close(); err != nil {
-			ci.logger.Log(err)
+			log.Println(err)
 		}
 	}()
 
@@ -127,7 +127,7 @@ func (ci *ClickhouseImpl) Insert(ctx context.Context, view View, rows []buffer.R
 		if _, err := stmt.ExecContext(timeoutContext, row...); err == nil {
 			affected++
 		} else {
-			ci.logger.Log(err)
+			log.Println(err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
