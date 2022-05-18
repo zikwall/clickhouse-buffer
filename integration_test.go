@@ -5,6 +5,7 @@ package clickhousebuffer
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -15,8 +16,9 @@ import (
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	redis2 "github.com/zikwall/clickhouse-buffer/src/buffer/redis"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -47,18 +49,18 @@ func TestMain(m *testing.M) {
 	}
 
 	// STEP 2: Create Clickhouse service
-	pool2, resource2, ch, clickhouse, err := useClickhousePool(ctx)
+	pool2, resource2, conn, nativeClickhouse, err := useClickhousePool(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// STEP 3: Drop and Create table under certain conditions
-	if err = beforeCheckTables(ctx, ch); err != nil {
+	if err = beforeCheckTables(ctx, conn); err != nil {
 		log.Panic(err)
 	}
 
 	// STEP 4: Create clickhouse client and buffer writer with redis buffer
-	client, redisBuffer, err := useClientAndRedisBuffer(ctx, clickhouse, db)
+	client, redisBuffer, err := useClientAndRedisBuffer(ctx, nativeClickhouse, db)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -83,17 +85,12 @@ func TestMain(m *testing.M) {
 		log.Panic(err)
 	}
 
-	if err := checksClickhouse(ctx, ch); err != nil {
+	if err := checksClickhouse(ctx, conn); err != nil {
 		log.Panic(err)
 	}
 
 	// retry test fails
-	dropTable(ctx, ch)
-	// downgrade timeout for insert, this is necessary because we are waiting for a very long time (15s default)
-	// but since we deleted the table, we don't need to wait that long
-	if impl, ok := clickhouse.(*ClickhouseImpl); ok {
-		impl.SetInsertTimeout(500)
-	}
+	dropTable(ctx, conn)
 
 	// it should be successful case
 	writeDataToBuffer(writeAPI)
@@ -131,8 +128,8 @@ type clickhouseRowData struct {
 	createdAt string
 }
 
-func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([]clickhouseRowData, error) {
-	rws, err := ch.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", integrationTableName))
+func fetchClickhouseRows(ctx context.Context, conn driver.Conn) ([]clickhouseRowData, error) {
+	rws, err := conn.Query(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", integrationTableName))
 	if err != nil {
 		return nil, err
 	}
@@ -157,17 +154,17 @@ func fetchClickhouseRows(ctx context.Context, ch *sqlx.DB) ([]clickhouseRowData,
 	return values, err
 }
 
-func beforeCheckTables(ctx context.Context, ch *sqlx.DB) error {
-	dropTable(ctx, ch)
-	return createTable(ctx, ch)
+func beforeCheckTables(ctx context.Context, conn driver.Conn) error {
+	dropTable(ctx, conn)
+	return createTable(ctx, conn)
 }
 
-func dropTable(ctx context.Context, ch *sqlx.DB) {
-	_, _ = ch.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
+func dropTable(ctx context.Context, conn driver.Conn) {
+	_ = conn.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
 }
 
-func createTable(ctx context.Context, ch *sqlx.DB) error {
-	_, err := ch.ExecContext(ctx, fmt.Sprintf(`
+func createTable(ctx context.Context, conn driver.Conn) error {
+	err := conn.Exec(ctx, fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
 			uuid   		String,
@@ -202,7 +199,7 @@ func useRedisPool() (*dockertest.Pool, *dockertest.Resource, *redis.Client, erro
 	return pool, resource, db, nil
 }
 
-func useClickhousePool(ctx context.Context) (*dockertest.Pool, *dockertest.Resource, *sqlx.DB, Clickhouse, error) {
+func useClickhousePool(ctx context.Context) (*dockertest.Pool, *dockertest.Resource, driver.Conn, Clickhouse, error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("could't connect to clickhouse docker: %s", err)
@@ -214,36 +211,44 @@ func useClickhousePool(ctx context.Context) (*dockertest.Pool, *dockertest.Resou
 	}
 
 	var (
-		ch         *sqlx.DB
-		clickhouse Clickhouse
+		conn             driver.Conn
+		nativeClickhouse Clickhouse
 	)
 
 	err = pool.Retry(func() error {
 		// auto Ping by clickhouse buffer package
-		clickhouse, err = NewClickhouseWithOptions(ctx,
-			&ClickhouseCfg{
-				Address:  "localhost",
+		nativeClickhouse, err = NewNativeClickhouse(ctx, &clickhouse.Options{
+			Addr: []string{"localhost"},
+			Auth: clickhouse.Auth{
+				Database: "default",
+				Username: "default",
 				Password: "",
-				User:     "",
-				Database: "",
-				AltHosts: "",
-				IsDebug:  true,
 			},
-			WithMaxIdleConns(20),
-			WithMaxOpenConns(21),
-			WithConnMaxLifetime(time.Minute*5),
-		)
+			TLS: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			Settings: clickhouse.Settings{
+				"max_execution_time": 60,
+			},
+			DialTimeout:     5 * time.Second,
+			MaxIdleConns:    5,
+			MaxOpenConns:    5,
+			ConnMaxLifetime: time.Minute * 5,
+			Compression: &clickhouse.Compression{
+				Method: clickhouse.CompressionLZ4,
+			},
+			Debug: true,
+		})
 		if err != nil {
 			return err
 		}
-		ch = clickhouse.GetConnection()
+		conn = nativeClickhouse.Conn()
 		return nil
 	})
-
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("could't connect to clickhouse docker: %s", err)
 	}
-	return pool, resource, ch, clickhouse, nil
+	return pool, resource, conn, nativeClickhouse, nil
 }
 
 func useCommonClient(ctx context.Context, clickhouse Clickhouse) Client {
@@ -252,7 +257,15 @@ func useCommonClient(ctx context.Context, clickhouse Clickhouse) Client {
 	)
 }
 
-func useClientAndRedisBuffer(ctx context.Context, clickhouse Clickhouse, db *redis.Client) (Client, buffer.Buffer, error) {
+func useClientAndRedisBuffer(
+	ctx context.Context,
+	clickhouse Clickhouse,
+	db *redis.Client,
+) (
+	Client,
+	buffer.Buffer,
+	error,
+) {
 	client := useCommonClient(ctx, clickhouse)
 	buf, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
 	if err != nil {
@@ -306,9 +319,9 @@ func checksBuffer(buf buffer.Buffer) error {
 	return nil
 }
 
-func checksClickhouse(ctx context.Context, ch *sqlx.DB) error {
+func checksClickhouse(ctx context.Context, conn driver.Conn) error {
 	// check data in clickhouse, write after flushing
-	values, err := fetchClickhouseRows(ctx, ch)
+	values, err := fetchClickhouseRows(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("could't fetch data from clickhouse: %s", err)
 	}

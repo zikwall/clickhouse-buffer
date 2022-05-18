@@ -10,7 +10,7 @@ import (
 	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
 
 	"github.com/ClickHouse/clickhouse-go"
-	"github.com/jmoiron/sqlx"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
 var (
@@ -38,7 +38,7 @@ func (c *ClickhouseImplMock) Close() error {
 	return nil
 }
 
-func (c *ClickhouseImplMock) GetConnection() *sqlx.DB {
+func (c *ClickhouseImplMock) Conn() driver.Conn {
 	return nil
 }
 
@@ -52,7 +52,7 @@ func (ce *ClickhouseImplErrMock) Close() error {
 	return nil
 }
 
-func (ce *ClickhouseImplErrMock) GetConnection() *sqlx.DB {
+func (ce *ClickhouseImplErrMock) Conn() driver.Conn {
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (ce *ClickhouseImplErrMockFailed) Close() error {
 	return nil
 }
 
-func (ce *ClickhouseImplErrMockFailed) GetConnection() *sqlx.DB {
+func (ce *ClickhouseImplErrMockFailed) Conn() driver.Conn {
 	return nil
 }
 
@@ -85,7 +85,7 @@ func (cr *ClickhouseImplRetryMock) Close() error {
 	return nil
 }
 
-func (cr *ClickhouseImplRetryMock) GetConnection() *sqlx.DB {
+func (cr *ClickhouseImplRetryMock) Conn() driver.Conn {
 	return nil
 }
 

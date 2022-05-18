@@ -1,6 +1,17 @@
 package clickhousebuffer
 
-import "github.com/ClickHouse/clickhouse-go"
+import (
+	"time"
+
+	"github.com/ClickHouse/clickhouse-go"
+)
+
+const (
+	defaultMaxIdleConns          = 20
+	defaultMaxOpenConns          = 21
+	defaultConnMaxLifetime       = time.Minute * 5
+	defaultInsertDurationTimeout = time.Millisecond * 15000
+)
 
 // But before that, you need to check error code from Clickhouse,
 // this is necessary in order to ensure the finiteness of queue.
@@ -40,4 +51,9 @@ func isResendAvailable(err error) bool {
 		return false
 	}
 	return true
+}
+
+type View struct {
+	Name    string
+	Columns []string
 }
