@@ -20,7 +20,7 @@ func TestMemory(t *testing.T) {
 	defer cancel()
 
 	// STEP 2: Create Clickhouse service
-	pool, resource, ch, clickhouse, err := useClickhousePool(ctx)
+	ch, clickhouse, err := useClickhousePool(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -45,12 +45,6 @@ func TestMemory(t *testing.T) {
 
 	if err = checksClickhouse(ctx, ch); err != nil {
 		log.Panic(err)
-	}
-
-	// STEP 7: Close resources
-	// You can't defer this because os.Exit doesn't care for defer
-	if err = pool.Purge(resource); err != nil {
-		log.Panicf("could't purge resource: %s", err)
 	}
 }
 

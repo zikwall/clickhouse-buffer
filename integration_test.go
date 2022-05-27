@@ -5,7 +5,6 @@ package clickhousebuffer
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -19,13 +18,12 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis/v8"
-	"github.com/ory/dockertest/v3"
 )
 
 const integrationTableName = "default.test_integration_xxx_xxx"
 
 type integrationRow struct {
-	id       int
+	id       uint8
 	uuid     string
 	insertTS time.Time
 }
@@ -43,13 +41,13 @@ func TestMain(m *testing.M) {
 	defer cancel()
 
 	// STEP 1: Create Redis service
-	pool, resource, db, err := useRedisPool()
+	db, err := useRedisPool()
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// STEP 2: Create Clickhouse service
-	pool2, resource2, conn, nativeClickhouse, err := useClickhousePool(ctx)
+	conn, nativeClickhouse, err := useClickhousePool(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -109,15 +107,6 @@ func TestMain(m *testing.M) {
 
 	// STEP 7: Close resources
 	code := m.Run()
-
-	// You can't defer this because os.Exit doesn't care for defer
-	if err := pool.Purge(resource); err != nil {
-		log.Panicf("could not purge resource: %s", err)
-	}
-
-	if err := pool2.Purge(resource2); err != nil {
-		log.Panicf("could not purge resource: %s", err)
-	}
 	// nolint:gocritic // it's OK
 	os.Exit(code)
 }
@@ -174,81 +163,67 @@ func createTable(ctx context.Context, conn driver.Conn) error {
 	return err
 }
 
-func useRedisPool() (*dockertest.Pool, *dockertest.Resource, *redis.Client, error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("coul' not connect to redis docker: %s", err)
+func useRedisPool() (*redis.Client, error) {
+	var (
+		db   *redis.Client
+		err  error
+		host = os.Getenv("REDIS_HOST")
+		user = os.Getenv("REDIS_USER")
+		pass = os.Getenv("REDIS_PASS")
+	)
+	if host == "" {
+		host = "localhost:6379"
 	}
-
-	resource, err := pool.Run("redis", "6.2", nil)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("could 't start redis resource: %s", err)
-	}
-
-	var db *redis.Client
-	err = pool.Retry(func() error {
-		db = redis.NewClient(&redis.Options{
-			Addr: fmt.Sprintf("localhost:%s", resource.GetPort("6379/tcp")),
-		})
-		return db.Ping(db.Context()).Err()
+	db = redis.NewClient(&redis.Options{
+		Addr:     host,
+		Username: user,
+		Password: pass,
 	})
-
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("could't connect to redis docker: %s", err)
+	if err = db.Ping(db.Context()).Err(); err != nil {
+		return nil, err
 	}
-	return pool, resource, db, nil
+	return db, nil
 }
 
-func useClickhousePool(ctx context.Context) (*dockertest.Pool, *dockertest.Resource, driver.Conn, Clickhouse, error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("could't connect to clickhouse docker: %s", err)
-	}
-
-	resource, err := pool.Run("yandex/clickhouse-server", "20.8.19.4", nil)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("could't start clickhouse resource: %s", err)
-	}
-
+func useClickhousePool(ctx context.Context) (driver.Conn, Clickhouse, error) {
 	var (
-		conn             driver.Conn
-		nativeClickhouse Clickhouse
+		host     = os.Getenv("CLICKHOUSE_HOST")
+		database = os.Getenv("CLICKHOUSE_DATABASE")
+		user     = os.Getenv("CLICKHOUSE_USER")
+		password = os.Getenv("CLICKHOUSE_PASSWORD")
 	)
-
-	err = pool.Retry(func() error {
-		// auto Ping by clickhouse buffer package
-		nativeClickhouse, err = NewNativeClickhouse(ctx, &clickhouse.Options{
-			Addr: []string{"localhost"},
-			Auth: clickhouse.Auth{
-				Database: "default",
-				Username: "default",
-				Password: "",
-			},
-			TLS: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-			Settings: clickhouse.Settings{
-				"max_execution_time": 60,
-			},
-			DialTimeout:     5 * time.Second,
-			MaxIdleConns:    5,
-			MaxOpenConns:    5,
-			ConnMaxLifetime: time.Minute * 5,
-			Compression: &clickhouse.Compression{
-				Method: clickhouse.CompressionLZ4,
-			},
-			Debug: true,
-		})
-		if err != nil {
-			return err
-		}
-		conn = nativeClickhouse.Conn()
-		return nil
+	if host == "" {
+		host = "localhost:9000"
+	}
+	if database == "" {
+		database = "default"
+	}
+	if user == "" {
+		user = "default"
+	}
+	nativeClickhouse, err := NewNativeClickhouse(ctx, &clickhouse.Options{
+		Addr: []string{host},
+		Auth: clickhouse.Auth{
+			Database: database,
+			Username: user,
+			Password: password,
+		},
+		Settings: clickhouse.Settings{
+			"max_execution_time": 60,
+		},
+		DialTimeout:     5 * time.Second,
+		MaxIdleConns:    5,
+		MaxOpenConns:    5,
+		ConnMaxLifetime: time.Minute * 5,
+		Compression: &clickhouse.Compression{
+			Method: clickhouse.CompressionLZ4,
+		},
+		Debug: true,
 	})
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("could't connect to clickhouse docker: %s", err)
+		return nil, nil, err
 	}
-	return pool, resource, conn, nativeClickhouse, nil
+	return nativeClickhouse.Conn(), nativeClickhouse, nil
 }
 
 func useCommonClient(ctx context.Context, clickhouse Clickhouse) Client {
