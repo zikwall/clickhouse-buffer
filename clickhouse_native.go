@@ -34,13 +34,13 @@ func (c *clickhouseNative) Insert(ctx context.Context, view View, rows []buffer.
 	}
 	var affected uint64
 	for _, row := range rows {
-		if err = batch.Append(row...); err != nil {
+		if err := batch.Append(row...); err != nil {
 			log.Println(err)
 		} else {
 			affected++
 		}
 	}
-	if err = batch.Send(); err != nil {
+	if err := batch.Send(); err != nil {
 		return 0, err
 	}
 	return affected, nil
