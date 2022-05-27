@@ -9,7 +9,7 @@ import (
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 

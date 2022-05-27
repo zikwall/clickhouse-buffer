@@ -3,7 +3,7 @@ package clickhousebuffer
 import (
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
 const (
