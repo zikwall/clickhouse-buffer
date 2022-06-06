@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zikwall/clickhouse-buffer/database"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
 
@@ -30,7 +31,7 @@ var (
 
 type ClickhouseImplMock struct{}
 
-func (c *ClickhouseImplMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (c *ClickhouseImplMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, nil
 }
 
@@ -44,7 +45,7 @@ func (c *ClickhouseImplMock) Conn() driver.Conn {
 
 type ClickhouseImplErrMock struct{}
 
-func (ce *ClickhouseImplErrMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (ce *ClickhouseImplErrMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, errClickhouseUnknownException
 }
 
@@ -58,7 +59,7 @@ func (ce *ClickhouseImplErrMock) Conn() driver.Conn {
 
 type ClickhouseImplErrMockFailed struct{}
 
-func (ce *ClickhouseImplErrMockFailed) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (ce *ClickhouseImplErrMockFailed) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, errClickhouseUnknownTableException
 }
 
@@ -74,7 +75,7 @@ type ClickhouseImplRetryMock struct {
 	hasErr bool
 }
 
-func (cr *ClickhouseImplRetryMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (cr *ClickhouseImplRetryMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	if !cr.hasErr {
 		return 0, errClickhouseUnknownException
 	}
@@ -101,7 +102,7 @@ func (vm RowMock) Row() buffer.RowSlice {
 
 // nolint:funlen,gocyclo // it's not important here
 func TestClientImplHandleStream(t *testing.T) {
-	tableView := View{
+	tableView := database.View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}
@@ -278,7 +279,7 @@ func TestClientImplHandleStream(t *testing.T) {
 }
 
 func TestClientImplWriteBatch(t *testing.T) {
-	tableView := View{
+	tableView := database.View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}

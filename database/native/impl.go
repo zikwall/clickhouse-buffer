@@ -1,4 +1,4 @@
-package clickhousebuffer
+package native
 
 import (
 	"context"
@@ -7,24 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zikwall/clickhouse-buffer/database"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
-type Clickhouse interface {
-	Insert(context.Context, View, []buffer.RowSlice) (uint64, error)
-	Conn() driver.Conn
-	Close() error
-}
-
 type clickhouseNative struct {
 	conn          driver.Conn
 	insertTimeout time.Duration
 }
 
-func (c *clickhouseNative) Insert(ctx context.Context, view View, rows []buffer.RowSlice) (uint64, error) {
+// creates a template for preparing the query
+func nativeInsertQuery(table string, cols []string) string {
+	prepared := fmt.Sprintf("INSERT INTO %s (%s)", table, strings.Join(cols, ", "))
+	return prepared
+}
+
+func (c *clickhouseNative) Insert(ctx context.Context, view database.View, rows []buffer.RowSlice) (uint64, error) {
 	var err error
 	timeoutContext, cancel := context.WithTimeout(ctx, c.insertTimeout)
 	defer cancel()
@@ -46,33 +47,23 @@ func (c *clickhouseNative) Insert(ctx context.Context, view View, rows []buffer.
 	return affected, nil
 }
 
-// creates a template for preparing the query
-func nativeInsertQuery(table string, cols []string) string {
-	prepared := fmt.Sprintf("INSERT INTO %s (%s)", table, strings.Join(cols, ", "))
-	return prepared
-}
-
-func (c *clickhouseNative) Conn() driver.Conn {
-	return c.conn
-}
-
 func (c *clickhouseNative) Close() error {
 	return c.conn.Close()
 }
 
-func NewNativeClickhouse(ctx context.Context, options *clickhouse.Options) (Clickhouse, error) {
+func NewClickhouse(ctx context.Context, options *clickhouse.Options) (database.Clickhouse, driver.Conn, error) {
 	if options.MaxIdleConns == 0 {
-		options.MaxIdleConns = defaultMaxIdleConns
+		options.MaxIdleConns = database.GetDefaultMaxIdleConns()
 	}
 	if options.MaxOpenConns == 0 {
-		options.MaxOpenConns = defaultMaxOpenConns
+		options.MaxOpenConns = database.GetDefaultMaxOpenConns()
 	}
 	if options.ConnMaxLifetime == 0 {
-		options.ConnMaxLifetime = defaultConnMaxLifetime
+		options.ConnMaxLifetime = database.GetDefaultConnMaxLifetime()
 	}
 	conn, err := clickhouse.Open(options)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"max_block_size": 10,
@@ -83,17 +74,17 @@ func NewNativeClickhouse(ctx context.Context, options *clickhouse.Options) (Clic
 		if exception, ok := err.(*clickhouse.Exception); ok {
 			fmt.Printf("catch exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: defaultInsertDurationTimeout,
-	}, nil
+		insertTimeout: database.GetDefaultInsertDurationTimeout(),
+	}, conn, nil
 }
 
-func NewNativeClickhouseWithConn(conn driver.Conn) Clickhouse {
+func NewClickhouseWithConn(conn driver.Conn) database.Clickhouse {
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: defaultInsertDurationTimeout,
+		insertTimeout: database.GetDefaultInsertDurationTimeout(),
 	}
 }

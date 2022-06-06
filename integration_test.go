@@ -5,6 +5,7 @@ package clickhousebuffer
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -12,6 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zikwall/clickhouse-buffer/database"
+	"github.com/zikwall/clickhouse-buffer/database/native"
+	sqlCh "github.com/zikwall/clickhouse-buffer/database/sql"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 	redis2 "github.com/zikwall/clickhouse-buffer/src/buffer/redis"
 
@@ -33,41 +37,34 @@ func (i integrationRow) Row() buffer.RowSlice {
 }
 
 // This test is a complete simulation of the work of the buffer bundle (Redis) and the Clickhouse data warehouse
-func TestMain(m *testing.M) {
+// nolint:dupl // it's OK
+func TestNative(t *testing.T) {
 	var err error
-	log.Println("RUN INTEGRATION TEST WITH REDIS AND CLICKHOUSE")
-
+	log.Println("RUN INTEGRATION TEST WITH REDIS AND NATIVE CLICKHOUSE")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
 	// STEP 1: Create Redis service
 	db, err := useRedisPool()
 	if err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	// STEP 2: Create Clickhouse service
 	conn, nativeClickhouse, err := useClickhousePool(ctx)
 	if err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	// STEP 3: Drop and Create table under certain conditions
 	if err = beforeCheckTables(ctx, conn); err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	// STEP 4: Create clickhouse client and buffer writer with redis buffer
 	client, redisBuffer, err := useClientAndRedisBuffer(ctx, nativeClickhouse, db)
 	if err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	defer client.Close()
-
 	// STEP 5: Write own data to redis
 	writeAPI := useWriteAPI(client, redisBuffer)
-
 	var errorsSlice []error
 	errorsCh := writeAPI.Errors()
 	go func() {
@@ -75,40 +72,85 @@ func TestMain(m *testing.M) {
 			errorsSlice = append(errorsSlice, err)
 		}
 	}()
-
 	writeDataToBuffer(writeAPI)
-
 	// STEP 6: Checks!
 	if err := checksBuffer(redisBuffer); err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	if err := checksClickhouse(ctx, conn); err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	// retry test fails
 	dropTable(ctx, conn)
-
 	// it should be successful case
 	writeDataToBuffer(writeAPI)
 	if err := checksBuffer(redisBuffer); err != nil {
-		log.Panic(err)
+		t.Fatal(err)
 	}
-
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
 	<-time.After(600 * time.Millisecond)
-
 	if len(errorsSlice) != 1 {
-		log.Panicf("failed, the clickhouse was expected receive one error, received: %d", len(errorsSlice))
+		t.Fatalf("failed, the clickhouse was expected receive one error, received: %d", len(errorsSlice))
 	}
-
 	log.Println("received errors from clickhouse insert:", errorsSlice)
+}
 
-	// STEP 7: Close resources
-	code := m.Run()
-	// nolint:gocritic // it's OK
-	os.Exit(code)
+// nolint:dupl // it's OK
+func TestSQL(t *testing.T) {
+	var err error
+	log.Println("RUN INTEGRATION TEST WITH REDIS AND SQL CLICKHOUSE")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// STEP 1: Create Redis service
+	db, err := useRedisPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// STEP 2: Create Clickhouse service
+	conn, nativeClickhouse, err := useClickhouseSQLPool(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// STEP 3: Drop and Create table under certain conditions
+	if err = beforeCheckTablesSQL(ctx, conn); err != nil {
+		t.Fatal(err)
+	}
+	// STEP 4: Create clickhouse client and buffer writer with redis buffer
+	client, redisBuffer, err := useClientAndRedisBuffer(ctx, nativeClickhouse, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	// STEP 5: Write own data to redis
+	writeAPI := useWriteAPI(client, redisBuffer)
+	var errorsSlice []error
+	errorsCh := writeAPI.Errors()
+	go func() {
+		for err := range errorsCh {
+			errorsSlice = append(errorsSlice, err)
+		}
+	}()
+	writeDataToBuffer(writeAPI)
+	// STEP 6: Checks!
+	if err := checksBuffer(redisBuffer); err != nil {
+		t.Fatal(err)
+	}
+	if err := checksClickhouseSQL(ctx, conn); err != nil {
+		t.Fatal(err)
+	}
+	// retry test fails
+	dropTableSQL(ctx, conn)
+	// it should be successful case
+	writeDataToBuffer(writeAPI)
+	if err := checksBuffer(redisBuffer); err != nil {
+		t.Fatal(err)
+	}
+	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
+	<-time.After(600 * time.Millisecond)
+	if len(errorsSlice) != 1 {
+		t.Fatalf("failed, the clickhouse was expected receive one error, received: %d", len(errorsSlice))
+	}
+	log.Println("received errors from clickhouse insert:", errorsSlice)
 }
 
 type clickhouseRowData struct {
@@ -117,6 +159,7 @@ type clickhouseRowData struct {
 	createdAt string
 }
 
+// nolint:dupl // it's OK
 func fetchClickhouseRows(ctx context.Context, conn driver.Conn) ([]clickhouseRowData, error) {
 	rws, err := conn.Query(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", integrationTableName))
 	if err != nil {
@@ -143,17 +186,70 @@ func fetchClickhouseRows(ctx context.Context, conn driver.Conn) ([]clickhouseRow
 	return values, err
 }
 
+// nolint:dupl // it's OK
+func fetchClickhouseRowsSQL(ctx context.Context, conn *sql.DB) ([]clickhouseRowData, error) {
+	rws, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT id, uuid, insert_ts FROM %s", integrationTableName))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rws.Close()
+	}()
+	var values []clickhouseRowData
+	for rws.Next() {
+		var (
+			id        uint8
+			uuid      string
+			createdAt string
+		)
+		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
+			return nil, err
+		}
+		values = append(values, clickhouseRowData{id, uuid, createdAt})
+	}
+	if err := rws.Err(); err != nil {
+		return nil, err
+	}
+	return values, err
+}
+
+// nolint:dupl // it's OK
 func beforeCheckTables(ctx context.Context, conn driver.Conn) error {
 	dropTable(ctx, conn)
 	return createTable(ctx, conn)
 }
 
+// nolint:dupl // it's OK
 func dropTable(ctx context.Context, conn driver.Conn) {
 	_ = conn.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
 }
 
+// nolint:dupl // it's OK
 func createTable(ctx context.Context, conn driver.Conn) error {
 	err := conn.Exec(ctx, fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			id        	UInt8,
+			uuid   		String,
+			insert_ts   String
+		) engine=Memory
+	`, integrationTableName))
+	return err
+}
+
+// nolint:dupl // it's OK
+func beforeCheckTablesSQL(ctx context.Context, conn *sql.DB) error {
+	dropTableSQL(ctx, conn)
+	return createTableSQL(ctx, conn)
+}
+
+// nolint:dupl // it's OK
+func dropTableSQL(ctx context.Context, conn *sql.DB) {
+	_, _ = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", integrationTableName))
+}
+
+// nolint:dupl // it's OK
+func createTableSQL(ctx context.Context, conn *sql.DB) error {
+	_, err := conn.ExecContext(ctx, fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	UInt8,
 			uuid   		String,
@@ -166,7 +262,6 @@ func createTable(ctx context.Context, conn driver.Conn) error {
 func useRedisPool() (*redis.Client, error) {
 	var (
 		db   *redis.Client
-		err  error
 		host = os.Getenv("REDIS_HOST")
 		user = os.Getenv("REDIS_USER")
 		pass = os.Getenv("REDIS_PASS")
@@ -179,32 +274,42 @@ func useRedisPool() (*redis.Client, error) {
 		Username: user,
 		Password: pass,
 	})
-	if err = db.Ping(db.Context()).Err(); err != nil {
+	if err := db.Ping(db.Context()).Err(); err != nil {
 		return nil, err
 	}
 	return db, nil
 }
 
-func useClickhousePool(ctx context.Context) (driver.Conn, Clickhouse, error) {
-	var (
-		host     = os.Getenv("CLICKHOUSE_HOST")
-		database = os.Getenv("CLICKHOUSE_DATABASE")
-		user     = os.Getenv("CLICKHOUSE_USER")
-		password = os.Getenv("CLICKHOUSE_PASSWORD")
-	)
+const (
+	defaultUser = "default"
+	defaultDb   = "default"
+	defaultHost = "localhost:9000"
+)
+
+func useCredentials() (host, db, user, password string) {
+	host = os.Getenv("CLICKHOUSE_HOST")
+	db = os.Getenv("CLICKHOUSE_DATABASE")
+	user = os.Getenv("CLICKHOUSE_USER")
+	password = os.Getenv("CLICKHOUSE_PASSWORD")
+
 	if host == "" {
-		host = "localhost:9000"
+		host = defaultHost
 	}
-	if database == "" {
-		database = "default"
+	if db == "" {
+		db = defaultDb
 	}
 	if user == "" {
-		user = "default"
+		user = defaultUser
 	}
-	nativeClickhouse, err := NewNativeClickhouse(ctx, &clickhouse.Options{
+	return host, db, user, password
+}
+
+func useOptions() *clickhouse.Options {
+	host, user, db, password := useCredentials()
+	return &clickhouse.Options{
 		Addr: []string{host},
 		Auth: clickhouse.Auth{
-			Database: database,
+			Database: db,
 			Username: user,
 			Password: password,
 		},
@@ -219,29 +324,41 @@ func useClickhousePool(ctx context.Context) (driver.Conn, Clickhouse, error) {
 			Method: clickhouse.CompressionLZ4,
 		},
 		Debug: true,
-	})
+	}
+}
+
+func useClickhousePool(ctx context.Context) (driver.Conn, database.Clickhouse, error) {
+	nativeClickhouse, conn, err := native.NewClickhouse(ctx, useOptions())
 	if err != nil {
 		return nil, nil, err
 	}
-	return nativeClickhouse.Conn(), nativeClickhouse, nil
+	return conn, nativeClickhouse, nil
 }
 
-func useCommonClient(ctx context.Context, clickhouse Clickhouse) Client {
-	return NewClientWithOptions(ctx, clickhouse,
+func useClickhouseSQLPool(ctx context.Context) (*sql.DB, database.Clickhouse, error) {
+	sqlClickhouse, conn, err := sqlCh.NewClickhouse(ctx, useOptions())
+	if err != nil {
+		return nil, nil, err
+	}
+	return conn, sqlClickhouse, nil
+}
+
+func useCommonClient(ctx context.Context, ch database.Clickhouse) Client {
+	return NewClientWithOptions(ctx, ch,
 		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
 	)
 }
 
 func useClientAndRedisBuffer(
 	ctx context.Context,
-	clickhouse Clickhouse,
+	ch database.Clickhouse,
 	db *redis.Client,
 ) (
 	Client,
 	buffer.Buffer,
 	error,
 ) {
-	client := useCommonClient(ctx, clickhouse)
+	client := useCommonClient(ctx, ch)
 	buf, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
 	if err != nil {
 		return nil, nil, fmt.Errorf("could't create redis buffer: %s", err)
@@ -250,7 +367,7 @@ func useClientAndRedisBuffer(
 }
 
 func useWriteAPI(client Client, buf buffer.Buffer) Writer {
-	writeAPI := client.Writer(View{
+	writeAPI := client.Writer(database.View{
 		Name:    integrationTableName,
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}, buf)
@@ -273,7 +390,6 @@ func writeDataToBuffer(writeAPI Writer) {
 	writeAPI.WriteRow(integrationRow{
 		id: 5, uuid: "5", insertTS: time.Now(),
 	})
-
 	// wait a bit
 	<-time.After(50 * time.Millisecond)
 }
@@ -294,13 +410,8 @@ func checksBuffer(buf buffer.Buffer) error {
 	return nil
 }
 
-func checksClickhouse(ctx context.Context, conn driver.Conn) error {
-	// check data in clickhouse, write after flushing
-	values, err := fetchClickhouseRows(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("could't fetch data from clickhouse: %s", err)
-	}
-	log.Printf("Received values from clickhouse table: %v", values)
+func checkData(values []clickhouseRowData) error {
+	log.Printf("received values from clickhouse table: %v", values)
 	if len(values) != 5 {
 		return fmt.Errorf("failed, expected to get five values, received %d", len(values))
 	}
@@ -311,6 +422,24 @@ func checksClickhouse(ctx context.Context, conn driver.Conn) error {
 		return fmt.Errorf("failed, expected value 3, received %s", v)
 	}
 	return nil
+}
+
+func checksClickhouse(ctx context.Context, conn driver.Conn) error {
+	// check data in clickhouse, write after flushing
+	values, err := fetchClickhouseRows(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("could't fetch data from clickhouse: %s", err)
+	}
+	return checkData(values)
+}
+
+func checksClickhouseSQL(ctx context.Context, conn *sql.DB) error {
+	// check data in clickhouse, write after flushing
+	values, err := fetchClickhouseRowsSQL(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("could't fetch data from clickhouse: %s", err)
+	}
+	return checkData(values)
 }
 
 func TestSomething(t *testing.T) {
