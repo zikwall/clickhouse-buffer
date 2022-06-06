@@ -305,7 +305,7 @@ func useCredentials() (host, db, user, password string) {
 }
 
 func useOptions() *clickhouse.Options {
-	host, user, db, password := useCredentials()
+	host, db, user, password := useCredentials()
 	return &clickhouse.Options{
 		Addr: []string{host},
 		Auth: clickhouse.Auth{
@@ -316,10 +316,7 @@ func useOptions() *clickhouse.Options {
 		Settings: clickhouse.Settings{
 			"max_execution_time": 60,
 		},
-		DialTimeout:     5 * time.Second,
-		MaxIdleConns:    5,
-		MaxOpenConns:    5,
-		ConnMaxLifetime: time.Minute * 5,
+		DialTimeout: 5 * time.Second,
 		Compression: &clickhouse.Compression{
 			Method: clickhouse.CompressionLZ4,
 		},
@@ -336,7 +333,7 @@ func useClickhousePool(ctx context.Context) (driver.Conn, database.Clickhouse, e
 }
 
 func useClickhouseSQLPool(ctx context.Context) (*sql.DB, database.Clickhouse, error) {
-	sqlClickhouse, conn, err := sqlCh.NewClickhouse(ctx, useOptions())
+	sqlClickhouse, conn, err := sqlCh.NewClickhouse(ctx, useOptions(), &sqlCh.RuntimeOptions{})
 	if err != nil {
 		return nil, nil, err
 	}

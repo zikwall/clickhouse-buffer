@@ -71,22 +71,34 @@ func (c *clickhouseSQL) Insert(ctx context.Context, view database.View, rows []b
 	return affected, nil
 }
 
-func NewClickhouse(ctx context.Context, options *clickhouse.Options) (database.Clickhouse, *sql.DB, error) {
-	if options.MaxIdleConns == 0 {
-		options.MaxIdleConns = database.GetDefaultMaxIdleConns()
-	}
-	if options.MaxOpenConns == 0 {
-		options.MaxOpenConns = database.GetDefaultMaxOpenConns()
-	}
-	if options.ConnMaxLifetime == 0 {
-		options.ConnMaxLifetime = database.GetDefaultConnMaxLifetime()
-	}
+type RuntimeOptions struct {
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+}
 
+func NewClickhouse(
+	ctx context.Context,
+	options *clickhouse.Options,
+	runtimeOpts *RuntimeOptions,
+) (
+	database.Clickhouse,
+	*sql.DB,
+	error,
+) {
+	if runtimeOpts.MaxIdleConns == 0 {
+		runtimeOpts.MaxIdleConns = database.GetDefaultMaxIdleConns()
+	}
+	if runtimeOpts.MaxOpenConns == 0 {
+		runtimeOpts.MaxOpenConns = database.GetDefaultMaxOpenConns()
+	}
+	if runtimeOpts.ConnMaxLifetime == 0 {
+		runtimeOpts.ConnMaxLifetime = database.GetDefaultConnMaxLifetime()
+	}
 	conn := clickhouse.OpenDB(options)
-	conn.SetMaxIdleConns(options.MaxIdleConns)
-	conn.SetMaxOpenConns(options.MaxOpenConns)
-	conn.SetConnMaxLifetime(options.ConnMaxLifetime)
-
+	conn.SetMaxIdleConns(runtimeOpts.MaxIdleConns)
+	conn.SetMaxOpenConns(runtimeOpts.MaxOpenConns)
+	conn.SetConnMaxLifetime(runtimeOpts.ConnMaxLifetime)
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"max_block_size": 10,
 	}), clickhouse.WithProgress(func(p *clickhouse.Progress) {
