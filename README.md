@@ -11,7 +11,7 @@
 - for go-clickhouse v1 `$ go get -u github.com/zikwall/clickhouse-buffer`
 - for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v2`
 
-## Why and why
+### Why and why
 
 In the practice of using the Clickhouse database (in real projects), 
 you often have to resort to creating your own ~~bicycles~~ in the form of queues 
@@ -21,7 +21,7 @@ and send one large data package to the Clickhouse database.
 This is due to the fact that Clickhouse is designed so that it better processes new data in batches 
 (and this is recommended by the authors themselves).
 
-## Features
+### Features
 
 - [x] **non-blocking** - (recommend) async write client uses implicit batching.
   Data are asynchronously written to the underlying buffer and they are automatically sent to a server
@@ -35,23 +35,29 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 - [x] **redis** - use redis server as queue and buffer
 - [x] **retries** - resending "broken" or for some reason not sent packets
 
-## Usage
+### Usage
 
 ```go
 import (
-    "github.com/zikwall/clickhouse-buffer/v2/src/database/native"
-    "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+    "database/sql"
+
+    cxnative "github.com/zikwall/clickhouse-buffer/v2/src/database/native"
+    cxsql "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
 )
 
-// simple use
-ch := native.NewClickhouseWithConn(conn: driver.Conn)
-// or use database/sql
-ch := sql.NewClickhouseWithConn(conn: *sql.DB)
+// if you already have a connection to Clickhouse you can just use wrappers
+// with native interface
+ch := cxnative.NewClickhouseWithConn(conn: driver.Conn)
+// or use database/sql interface
+ch := cxsql.NewClickhouseWithConn(conn: *sql.DB)
 ```
 
 ```go
-// another way to use
-ch, conn, err := native.NewClickhouse(ctx,&clickhouse.Options{
+// if you don't want to create connections yourself, 
+// package can do it for you, just call the connection option you need:
+
+// with native interface
+ch, conn, err := cxnative.NewClickhouse(ctx,&clickhouse.Options{
         Addr: ctx.StringSlice("clickhouse-host"),
         Auth: clickhouse.Auth{
             Database:  ctx.String("clickhouse-database"),
@@ -65,11 +71,11 @@ ch, conn, err := native.NewClickhouse(ctx,&clickhouse.Options{
         Compression: &clickhouse.Compression{
             Method: clickhouse.CompressionLZ4,
         },
-        Debug: true,
+        Debug: ctx.Bool("debug"),
     },
 )
-// or use database/sql
-ch, conn, err := sql.NewClickhouse(ctx, &clickhouse.Options{
+// or with database/sql interface
+ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
         Addr: ctx.StringSlice("clickhouse-host"),
         Auth: clickhouse.Auth{
             Database:  ctx.String("clickhouse-database"),
@@ -83,8 +89,8 @@ ch, conn, err := sql.NewClickhouse(ctx, &clickhouse.Options{
         Compression: &clickhouse.Compression{
             Method: clickhouse.CompressionLZ4,
         },
-        Debug: true,
-    }, &sql.RuntimeOptions{},
+        Debug: ctx.Bool("debug"),
+    }, &cxsql.RuntimeOptions{},
 )
 ```
 
@@ -92,41 +98,40 @@ ch, conn, err := sql.NewClickhouse(ctx, &clickhouse.Options{
 
 ```go
 import (
-    chbuffer "github.com/zikwall/clickhouse-buffer/v2"
-    "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-    "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
-    "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
+    cx "github.com/zikwall/clickhouse-buffer/v2"
+    cxbuffer "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+    cxmemory "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
+    cxredis "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
 )
-
-client := chbuffer.NewClientWithOptions(ctx, ch,
-    clikchousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
+// create root client
+client := cxbuffer.NewClientWithOptions(ctx, ch,
+    cx.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
-
-engine := memory.NewBuffer(
+// create buffer engine
+buffer := cxmemory.NewBuffer(
     client.Options().BatchSize(),
 )
-// or
-engine := redis.NewBuffer(
+// or use redis
+buffer := cxredis.NewBuffer(
     contetx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
-
-writeAPI := client.Writer(buffer.View{
+// create new writer api: table name with columns
+writeAPI := client.Writer(cxbuffer.View{
     Name:    "clickhouse_database.clickhouse_table", 
     Columns: []string{"id", "uuid", "insert_ts"},
-}, engine)
+}, buffer)
 
-
+// define your custom data structure
 type MyCustomDataView struct {
 	id       int
 	uuid     string
 	insertTS time.Time
 }
-
-func (t *MyCustomDataView) Row() chbuffer.RowSlice {
-	return chbuffer.RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
+// and implement cxbuffer.Inline interface
+func (t *MyCustomDataView) Row() cxbuffer.RowSlice {
+	return cxbuffer.RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
 }
-
-// write your data
+// async write your data
 writeAPI.WriteRow(MyCustomDataView{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
@@ -146,11 +151,12 @@ go func() {
 Using the blocking writer interface
 
 ```go
-writerBlocking := client.WriterBlocking(View{
+// create new writer api: table name with columns
+writerBlocking := client.WriterBlocking(cxbuffer.View{
     Name:    "clickhouse_database.clickhouse_table",
     Columns: []string{"id", "uuid", "insert_ts"},
 })
-
+// non-asynchronous writing of data directly to Clickhouse
 err := writerBlocking.WriteRow(ctx, []MyCustomDataView{
     {
         id: 1, uuid: "1", insertTS: time.Now(),
@@ -187,7 +193,7 @@ type Queueable interface {
 and set it as an engine:
 
 ```go
-DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
+cx.DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
 ```
 
 #### Logs:
@@ -203,11 +209,29 @@ type Logger interface {
 
 ```go
 // example with default options
-DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
+cx.DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
 ```
 
 #### Tests:
 
 - `$ go test -v ./...`
-- `$ go test -v ./... -tags=integration`
 - `$ golangci-lint run --config ./.golangci.yml`
+
+**Integration Tests:**
+
+```shell
+export CLICKHOUSE_HOST=111.11.11.11:9000
+export REDIS_HOST=111.11.11.11:6379
+export REDIS_PASS=password_if_needed
+
+$ go test -v ./... -tags=integration
+```
+
+### TODO:
+
+- [ ] buffer interfaces
+- [ ] more retry buffer interfaces
+- [ ] rewrite retry lib
+- [ ] create binary app for streaming data to clickhouse
+  - [ ] client and server with HTTP interface
+  - [ ] client and server with gRPC interface
