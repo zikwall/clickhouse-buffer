@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/zikwall/clickhouse-buffer/database"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 
 	"github.com/Rican7/retry"
@@ -54,7 +55,7 @@ type Closable interface {
 }
 
 type retryPacket struct {
-	view     View
+	view     database.View
 	btc      *buffer.Batch
 	tryCount uint8
 }
@@ -125,7 +126,7 @@ func (r *retryImpl) backoffRetry(ctx context.Context) {
 	}
 }
 
-func (r *retryImpl) action(ctx context.Context, view View, btc *buffer.Batch) retry.Action {
+func (r *retryImpl) action(ctx context.Context, view database.View, btc *buffer.Batch) retry.Action {
 	return func(attempt uint) error {
 		affected, err := r.writer.Write(ctx, view, btc)
 		if err != nil {
@@ -145,7 +146,7 @@ func (r *retryImpl) action(ctx context.Context, view View, btc *buffer.Batch) re
 // and the number of repetition cycles has not been exhausted,
 // try to re-send it to the processing queue
 func (r *retryImpl) resended(packet *retryPacket, err error) bool {
-	if (packet.tryCount < defaultCycloCount) && isResendAvailable(err) {
+	if (packet.tryCount < defaultCycloCount) && database.IsResendAvailable(err) {
 		r.Retry(&retryPacket{
 			view:     packet.view,
 			btc:      packet.btc,

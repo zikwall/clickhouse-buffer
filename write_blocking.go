@@ -3,6 +3,7 @@ package clickhousebuffer
 import (
 	"context"
 
+	"github.com/zikwall/clickhouse-buffer/database"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
@@ -14,11 +15,11 @@ type WriterBlocking interface {
 }
 
 type WriterBlockingImpl struct {
-	view     View
+	view     database.View
 	streamer Client
 }
 
-func NewWriterBlocking(streamer Client, view View) WriterBlocking {
+func NewWriterBlocking(streamer Client, view database.View) WriterBlocking {
 	w := &WriterBlockingImpl{
 		view:     view,
 		streamer: streamer,

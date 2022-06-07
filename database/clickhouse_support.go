@@ -1,6 +1,35 @@
-package clickhousebuffer
+package database
 
-import "github.com/ClickHouse/clickhouse-go"
+import (
+	"context"
+	"time"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/zikwall/clickhouse-buffer/src/buffer"
+)
+
+const (
+	defaultMaxIdleConns          = 20
+	defaultMaxOpenConns          = 21
+	defaultConnMaxLifetime       = time.Minute * 15
+	defaultInsertDurationTimeout = time.Millisecond * 15000
+)
+
+func GetDefaultMaxIdleConns() int {
+	return defaultMaxIdleConns
+}
+
+func GetDefaultMaxOpenConns() int {
+	return defaultMaxOpenConns
+}
+
+func GetDefaultConnMaxLifetime() time.Duration {
+	return defaultConnMaxLifetime
+}
+
+func GetDefaultInsertDurationTimeout() time.Duration {
+	return defaultInsertDurationTimeout
+}
 
 // But before that, you need to check error code from Clickhouse,
 // this is necessary in order to ensure the finiteness of queue.
@@ -28,7 +57,7 @@ var noRetryErrors = map[int32]struct{}{
 	373: {}, // SESSION_IS_LOCKED
 }
 
-func isResendAvailable(err error) bool {
+func IsResendAvailable(err error) bool {
 	var (
 		exception *clickhouse.Exception
 		ok        bool
@@ -40,4 +69,14 @@ func isResendAvailable(err error) bool {
 		return false
 	}
 	return true
+}
+
+type View struct {
+	Name    string
+	Columns []string
+}
+
+type Clickhouse interface {
+	Insert(context.Context, View, []buffer.RowSlice) (uint64, error)
+	Close() error
 }

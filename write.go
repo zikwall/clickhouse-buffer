@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/zikwall/clickhouse-buffer/database"
 	"github.com/zikwall/clickhouse-buffer/src/buffer"
 )
 
@@ -22,7 +23,7 @@ type Writer interface {
 }
 
 type WriterImpl struct {
-	view         View
+	view         database.View
 	streamer     Client
 	writeBuffer  buffer.Buffer
 	writeCh      chan *buffer.Batch
@@ -36,7 +37,7 @@ type WriterImpl struct {
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(client Client, view View, buf buffer.Buffer, writeOptions *Options) Writer {
+func NewWriter(client Client, view database.View, buf buffer.Buffer, writeOptions *Options) Writer {
 	w := &WriterImpl{
 		view:         view,
 		streamer:     client,
