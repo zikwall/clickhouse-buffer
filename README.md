@@ -1,12 +1,15 @@
-[![build](https://github.com/zikwall/clickhouse-buffer/workflows/build_and_tests/badge.svg)](https://github.com/zikwall/clickhouse-buffer/actions)
-[![build](https://github.com/zikwall/clickhouse-buffer/workflows/golangci_lint/badge.svg)](https://github.com/zikwall/clickhouse-buffer/actions)
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/build_and_tests/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v2/actions)
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/golangci_lint/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v2/actions)
 
-# clickhouse-buffer
-Buffer for streaming data to ClickHouse
+<div align="center">
+  <h1>Clickhouse Buffer</h1>
+  <h5>An easy-to-use, powerful and productive package for writing data to Clickhouse columnar database</h5>
+</div>
 
 ## Install
 
-- `$ go get -u github.com/zikwall/clickhouse-buffer`
+- for go-clickhouse v1 `$ go get -u github.com/zikwall/clickhouse-buffer`
+- for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v2`
 
 ## Why and why
 
@@ -20,141 +23,111 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 
 ## Features
 
-#### Client offers two ways of writing: 
+- [x] **non-blocking** - (recommend) async write client uses implicit batching.
+  Data are asynchronously written to the underlying buffer and they are automatically sent to a server
+  when the size of the write buffer reaches the batch size, default 5000, or the flush interval,
+  default 1s, times out. Asynchronous write client is recommended for frequent periodic writes.
+- [x] **blocking.**
 
-- [x] non-blocking 
-- [x] blocking.
+**Client buffer engines:**
 
-Non-blocking write client uses implicit batching. 
-Data are asynchronously written to the underlying buffer and they are automatically sent to a server 
-when the size of the write buffer reaches the batch size, default 5000, or the flush interval, 
-default 1s, times out.
-
-Asynchronous write client is recommended for frequent periodic writes.
-
-#### Client buffer interfaces
-
-- [x] in-memory
-- [x] redis
-
-#### Writes are automatically retried on server back pressure
-
-There is also the possibility of resending "broken" or for some reason not sent packets. 
-By default, packet resending is disabled, to enable it, you need to call `(*Options).SetRetryIsEnabled(true)`.
-
-```go
-// example with default options
-DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true)
-```
-
-- [x] in-memory queue by default
-- [ ] Redis
-- [ ] RabbitMQ
-- [ ] Kafka
-
-You can implement queue engine by defining the `Queueable` interface:
-
-```go
-type Queueable interface {
-	Queue(packet *retryPacket)
-	Retries() <-chan *retryPacket
-}
-```
-
-and set it as an engine:
-
-```go
-DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
-```
+- [x] **in-memory** - use native channels and slices
+- [x] **redis** - use redis server as queue and buffer
+- [x] **retries** - resending "broken" or for some reason not sent packets
 
 ## Usage
 
-First you need to implement the `Inline` interface, and your own `Row` structure for formatting the data
-
 ```go
-// implement
-type MyTableRow struct {
-	id       int
-	uuid     string
-	insertTS time.Time
-}
-
-func (t *MyTableRow) Row() RowSlice {
-	return RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
-}
-```
-
-Next, you need to define the Clickhouse interface, you can define your own component or use an existing implementation.
-
-You can use two methods:
- - create a connection to the Clickhouse database from the connection parameters,
-
-```go
-ch, err := clickhousebuffer.NewClickhouseWithOptions(ctx,
-    &clickhousebuffer.ClickhouseCfg{
-        Address:  ctx.String("clickhouse-address"),
-        User:     ctx.String("clickhouse-user"),
-        Password: ctx.String("clickhouse-password"),
-        Database: ctx.String("clickhouse-database"),
-        AltHosts: ctx.String("clickhouse-alt-hosts"),
-        IsDebug:  ctx.Bool("debug"),
-    },
-    clickhousebuffer.WithMaxIdleConns(20),
-    clickhousebuffer.WithMaxOpenConns(21),
-    clickhousebuffer.WithConnMaxLifetime(time.Minute*5),
+import (
+    "github.com/zikwall/clickhouse-buffer/v2/database/native"
+    "github.com/zikwall/clickhouse-buffer/v2/database/sql"
 )
+
+// simple use
+ch := native.NewClickhouseWithConn(conn: driver.Conn)
+// or use database/sql
+ch := sql.NewClickhouseWithConn(conn: *sql.DB)
 ```
 
-- use an existing connection pool by providing `sqlx.DB`
-
 ```go
-clickhouse, _ := clikchousebuffer.NewClickhouseWithSqlx(conn *sqlx.DB)
+// another way to use
+ch, conn, err := native.NewClickhouse(ctx,&clickhouse.Options{
+        Addr: ctx.StringSlice("clickhouse-host"),
+        Auth: clickhouse.Auth{
+            Database:  ctx.String("clickhouse-database"),
+            Username:  ctx.String("clickhouse-username"),
+            Password:  ctx.String("clickhouse-password"),
+        },
+        Settings: clickhouse.Settings{
+            "max_execution_time": 60,
+        },
+        DialTimeout: 5 * time.Second,
+        Compression: &clickhouse.Compression{
+            Method: clickhouse.CompressionLZ4,
+        },
+        Debug: true,
+    },
+)
+// or use database/sql
+ch, conn, err := sql.NewClickhouse(ctx, &clickhouse.Options{
+        Addr: ctx.StringSlice("clickhouse-host"),
+        Auth: clickhouse.Auth{
+            Database:  ctx.String("clickhouse-database"),
+            Username:  ctx.String("clickhouse-username"),
+            Password:  ctx.String("clickhouse-password"),
+        },
+        Settings: clickhouse.Settings{
+            "max_execution_time": 60,
+        },
+        DialTimeout: 5 * time.Second,
+        Compression: &clickhouse.Compression{
+            Method: clickhouse.CompressionLZ4,
+        },
+        Debug: true,
+    }, &sql.RuntimeOptions{},
+)
 ```
 
 #### Create main data streamer client and write data
 
 ```go
-client := NewClientWithOptions(ctx, clickhouseConn,
+import (
+    chbuffer "github.com/zikwall/clickhouse-buffer"
+    "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+    "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
+    "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
+)
+
+client := chbuffer.NewClientWithOptions(ctx, ch,
     clikchousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
-```
 
-You can implement your own data buffer interface: `File`, `Rabbitmq`, `CustomMemory`, etc. or use an existing one. 
-
-```go
-type Buffer interface {
-	Write(vector RowSlice)
-	Read() []RowSlice
-	Len() int
-	Flush()
-}
-```
-
-Only the in-memory and redis buffer is currently available
-
-```go
-// use buffer implement interface
-buffer := memory.NewBuffer(
-	client.Options().BatchSize(),
+engine := memory.NewBuffer(
+    client.Options().BatchSize(),
 )
-```
-
-```go
-buffer := redis.NewBuffer(
-	contetx, *redis.Client, "bucket", client.Options().BatchSize(),
+// or
+engine := redis.NewBuffer(
+    contetx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
-```
 
-Now we can write data to the necessary tables in an asynchronous, non-blocking way
-
-```go
-writeAPI := client.Writer(View{
+writeAPI := client.Writer(buffer.View{
     Name:    "clickhouse_database.clickhouse_table", 
     Columns: []string{"id", "uuid", "insert_ts"},
-}, buffer)
+}, engine)
+
+
+type MyCustomDataView struct {
+	id       int
+	uuid     string
+	insertTS time.Time
+}
+
+func (t *MyCustomDataView) Row() chbuffer.RowSlice {
+	return chbuffer.RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
+}
 
 // write your data
-writeAPI.WriteRow(MyTableRow{
+writeAPI.WriteRow(MyCustomDataView{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 ```
@@ -178,7 +151,7 @@ writerBlocking := client.WriterBlocking(View{
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 
-err := writerBlocking.WriteRow(ctx, []Inline{
+err := writerBlocking.WriteRow(ctx, []MyCustomDataView{
     {
         id: 1, uuid: "1", insertTS: time.Now(),
     },
@@ -191,7 +164,33 @@ err := writerBlocking.WriteRow(ctx, []Inline{
 }...)
 ```
 
-### Logs
+### More
+
+#### Retries:
+
+> By default, packet resending is disabled, to enable it, you need to call `(*Options).SetRetryIsEnabled(true)`.
+
+- [x] in-memory use channels (default)
+- [ ] redis
+- [ ] rabbitMQ
+- [ ] kafka
+
+You can implement queue engine by defining the `Queueable` interface:
+
+```go
+type Queueable interface {
+	Queue(packet *retryPacket)
+	Retries() <-chan *retryPacket
+}
+```
+
+and set it as an engine:
+
+```go
+DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
+```
+
+#### Logs:
 
 You can implement your logger by simply implementing the Logger interface and throwing it in options:
 
@@ -207,9 +206,7 @@ type Logger interface {
 DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
 ```
 
-###### TODO: log levels: info, warning, error, fatal
-
-### Tests
+#### Tests:
 
 - `$ go test -v ./...`
 - `$ go test -v ./... -tags=integration`

@@ -4,12 +4,13 @@ import (
 	"context"
 	"sync"
 
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/database"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
 type clientImpl struct {
 	context       context.Context
-	clickhouse    Clickhouse
+	clickhouse    database.Clickhouse
 	options       *Options
 	writeAPIs     map[string]Writer
 	syncWriteAPIs map[string]WriterBlocking
@@ -18,11 +19,11 @@ type clientImpl struct {
 	logger        Logger
 }
 
-func NewClient(ctx context.Context, clickhouse Clickhouse) Client {
+func NewClient(ctx context.Context, clickhouse database.Clickhouse) Client {
 	return NewClientWithOptions(ctx, clickhouse, DefaultOptions())
 }
 
-func NewClientWithOptions(ctx context.Context, clickhouse Clickhouse, options *Options) Client {
+func NewClientWithOptions(ctx context.Context, clickhouse database.Clickhouse, options *Options) Client {
 	if options.logger == nil {
 		options.logger = newDefaultLogger()
 	}
@@ -49,7 +50,7 @@ func (cs *clientImpl) Options() *Options {
 	return cs.options
 }
 
-func (cs *clientImpl) Writer(view View, buf buffer.Buffer) Writer {
+func (cs *clientImpl) Writer(view database.View, buf buffer.Buffer) Writer {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.writeAPIs[key]; !ok {
@@ -60,7 +61,7 @@ func (cs *clientImpl) Writer(view View, buf buffer.Buffer) Writer {
 	return writer
 }
 
-func (cs *clientImpl) WriterBlocking(view View) WriterBlocking {
+func (cs *clientImpl) WriterBlocking(view database.View) WriterBlocking {
 	key := view.Name
 	cs.mu.Lock()
 	if _, ok := cs.syncWriteAPIs[key]; !ok {
@@ -94,12 +95,12 @@ func (cs *clientImpl) Close() {
 	cs.mu.Unlock()
 }
 
-func (cs *clientImpl) HandleStream(view View, btc *buffer.Batch) error {
+func (cs *clientImpl) HandleStream(view database.View, btc *buffer.Batch) error {
 	err := cs.WriteBatch(cs.context, view, btc)
 	if err != nil {
 		// If there is an acceptable error and if the functionality of resending data is activated,
 		// try to repeat the operation
-		if cs.options.isRetryEnabled && isResendAvailable(err) {
+		if cs.options.isRetryEnabled && database.IsResendAvailable(err) {
 			cs.retry.Retry(&retryPacket{
 				view: view,
 				btc:  btc,
@@ -110,7 +111,7 @@ func (cs *clientImpl) HandleStream(view View, btc *buffer.Batch) error {
 	return nil
 }
 
-func (cs *clientImpl) WriteBatch(ctx context.Context, view View, batch *buffer.Batch) error {
+func (cs *clientImpl) WriteBatch(ctx context.Context, view database.View, batch *buffer.Batch) error {
 	_, err := cs.clickhouse.Insert(ctx, view, batch.Rows())
 	return err
 }

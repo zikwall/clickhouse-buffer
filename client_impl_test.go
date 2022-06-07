@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/src/buffer/memory"
+	"github.com/zikwall/clickhouse-buffer/v2/database"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
 
-	"github.com/ClickHouse/clickhouse-go"
-	"github.com/jmoiron/sqlx"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 
 type ClickhouseImplMock struct{}
 
-func (c *ClickhouseImplMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (c *ClickhouseImplMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, nil
 }
 
@@ -38,13 +39,13 @@ func (c *ClickhouseImplMock) Close() error {
 	return nil
 }
 
-func (c *ClickhouseImplMock) GetConnection() *sqlx.DB {
+func (c *ClickhouseImplMock) Conn() driver.Conn {
 	return nil
 }
 
 type ClickhouseImplErrMock struct{}
 
-func (ce *ClickhouseImplErrMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (ce *ClickhouseImplErrMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, errClickhouseUnknownException
 }
 
@@ -52,13 +53,13 @@ func (ce *ClickhouseImplErrMock) Close() error {
 	return nil
 }
 
-func (ce *ClickhouseImplErrMock) GetConnection() *sqlx.DB {
+func (ce *ClickhouseImplErrMock) Conn() driver.Conn {
 	return nil
 }
 
 type ClickhouseImplErrMockFailed struct{}
 
-func (ce *ClickhouseImplErrMockFailed) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (ce *ClickhouseImplErrMockFailed) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	return 0, errClickhouseUnknownTableException
 }
 
@@ -66,7 +67,7 @@ func (ce *ClickhouseImplErrMockFailed) Close() error {
 	return nil
 }
 
-func (ce *ClickhouseImplErrMockFailed) GetConnection() *sqlx.DB {
+func (ce *ClickhouseImplErrMockFailed) Conn() driver.Conn {
 	return nil
 }
 
@@ -74,7 +75,7 @@ type ClickhouseImplRetryMock struct {
 	hasErr bool
 }
 
-func (cr *ClickhouseImplRetryMock) Insert(_ context.Context, _ View, _ []buffer.RowSlice) (uint64, error) {
+func (cr *ClickhouseImplRetryMock) Insert(_ context.Context, _ database.View, _ []buffer.RowSlice) (uint64, error) {
 	if !cr.hasErr {
 		return 0, errClickhouseUnknownException
 	}
@@ -85,7 +86,7 @@ func (cr *ClickhouseImplRetryMock) Close() error {
 	return nil
 }
 
-func (cr *ClickhouseImplRetryMock) GetConnection() *sqlx.DB {
+func (cr *ClickhouseImplRetryMock) Conn() driver.Conn {
 	return nil
 }
 
@@ -101,7 +102,7 @@ func (vm RowMock) Row() buffer.RowSlice {
 
 // nolint:funlen,gocyclo // it's not important here
 func TestClientImplHandleStream(t *testing.T) {
-	tableView := View{
+	tableView := database.View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}
@@ -278,7 +279,7 @@ func TestClientImplHandleStream(t *testing.T) {
 }
 
 func TestClientImplWriteBatch(t *testing.T) {
-	tableView := View{
+	tableView := database.View{
 		Name:    "test_db.test_table",
 		Columns: []string{"id", "uuid", "insert_ts"},
 	}
