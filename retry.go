@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-
 	"github.com/Rican7/retry"
 	"github.com/Rican7/retry/backoff"
 	"github.com/Rican7/retry/strategy"
+
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
 )
 
 const (
@@ -145,7 +145,7 @@ func (r *retryImpl) action(ctx context.Context, view database.View, btc *buffer.
 // if error is not in list of not allowed,
 // and the number of repetition cycles has not been exhausted,
 // try to re-send it to the processing queue
-func (r *retryImpl) resended(packet *retryPacket, err error) bool {
+func (r *retryImpl) resend(packet *retryPacket, err error) bool {
 	if (packet.tryCount < defaultCycloCount) && database.IsResendAvailable(err) {
 		r.Retry(&retryPacket{
 			view:     packet.view,
@@ -167,7 +167,7 @@ func (r *retryImpl) handlePacket(ctx context.Context, packet *retryPacket) {
 	}
 	if err := retry.Retry(r.action(ctx, packet.view, packet.btc), r.limit, r.backoff); err != nil {
 		r.logger.Logf("%s: %v", limitOfRetries, err)
-		if !r.resended(packet, err) {
+		if !r.resend(packet, err) {
 			// otherwise, increase failed counter and report in logs that the package is always lost
 			r.failed.Inc()
 			r.logger.Logf(packetIsLost, defaultCycloCount)

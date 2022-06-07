@@ -39,8 +39,8 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 
 ```go
 import (
-    "github.com/zikwall/clickhouse-buffer/v2/database/native"
-    "github.com/zikwall/clickhouse-buffer/v2/database/sql"
+    "github.com/zikwall/clickhouse-buffer/v2/src/database/native"
+    "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
 )
 
 // simple use

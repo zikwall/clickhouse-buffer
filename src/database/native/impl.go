@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
 )
 
 type clickhouseNative struct {
