@@ -1,6 +1,13 @@
 name: golangci_lint
 on:
   push:
+    paths-ignore:
+      - 'bin/**'
+      - 'images/**'
+      - 'share/**'
+      - '.github/**'
+      - '**.md'
+      - '.gitignore'
     tags:
       - v*
     branches:

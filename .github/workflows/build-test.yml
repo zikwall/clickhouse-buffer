@@ -1,5 +1,19 @@
 name: build_and_tests
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'bin/**'
+      - 'images/**'
+      - 'share/**'
+      - '.github/**'
+      - '**.md'
+      - '.gitignore'
+    tags:
+      - v*
+    branches:
+      - master
+      - main
+  pull_request:
 jobs:
   build:
     name: Build
