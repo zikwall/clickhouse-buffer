@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 
 	"github.com/go-redis/redis/v8"
 )

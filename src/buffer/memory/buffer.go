@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
 type inMemoryBufferImpl struct {

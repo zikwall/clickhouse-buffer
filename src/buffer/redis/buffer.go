@@ -3,7 +3,7 @@ package redis
 import (
 	"log"
 
-	"github.com/zikwall/clickhouse-buffer/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
 func (rb *redisBufferImpl) Write(row buffer.RowSlice) {
