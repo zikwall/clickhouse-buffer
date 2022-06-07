@@ -92,7 +92,7 @@ ch, conn, err := sql.NewClickhouse(ctx, &clickhouse.Options{
 
 ```go
 import (
-    chbuffer "github.com/zikwall/clickhouse-buffer"
+    chbuffer "github.com/zikwall/clickhouse-buffer/v2"
     "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
     "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
     "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
