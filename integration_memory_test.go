@@ -8,9 +8,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
 )
 
 // nolint:dupl // it's OK

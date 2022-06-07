@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
-	"github.com/zikwall/clickhouse-buffer/v2/database/native"
-	sqlCh "github.com/zikwall/clickhouse-buffer/v2/database/sql"
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	redis2 "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
-
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis/v8"
+
+	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	redis2 "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database/native"
+	sqlCh "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
 )
 
 const integrationTableName = "default.test_integration_xxx_xxx"
@@ -291,7 +291,6 @@ func useCredentials() (host, db, user, password string) {
 	db = os.Getenv("CLICKHOUSE_DATABASE")
 	user = os.Getenv("CLICKHOUSE_USER")
 	password = os.Getenv("CLICKHOUSE_PASSWORD")
-
 	if host == "" {
 		host = defaultHost
 	}

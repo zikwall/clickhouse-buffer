@@ -3,8 +3,8 @@ package clickhousebuffer
 import (
 	"context"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
 )
 
 type Client interface {

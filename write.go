@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v2/database"
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/database"
 )
 
 // Writer is client interface with non-blocking methods for writing rows asynchronously in batches into an Clickhouse server.
