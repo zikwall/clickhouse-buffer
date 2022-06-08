@@ -6,11 +6,11 @@ import (
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
-func (rb *redisBufferImpl) Write(row buffer.RowSlice) {
+func (r *redisBuffer) Write(row buffer.RowSlice) {
 	buf, err := row.Encode()
 	if err == nil {
-		err = rb.client.RPush(rb.context, rb.bucket, buf).Err()
-		if err != nil && !rb.isContextClosedErr(err) {
+		err = r.client.RPush(r.context, r.bucket, buf).Err()
+		if err != nil && !r.isContextClosedErr(err) {
 			log.Printf("redis buffer write err: %v\n", err.Error())
 		}
 	} else {
@@ -18,10 +18,9 @@ func (rb *redisBufferImpl) Write(row buffer.RowSlice) {
 	}
 }
 
-func (rb *redisBufferImpl) Read() []buffer.RowSlice {
-	values := rb.client.LRange(rb.context, rb.bucket, 0, rb.bufferSize).Val()
+func (r *redisBuffer) Read() []buffer.RowSlice {
+	values := r.client.LRange(r.context, r.bucket, 0, r.bufferSize).Val()
 	slices := make([]buffer.RowSlice, 0, len(values))
-
 	for _, value := range values {
 		if v, err := buffer.RowDecoded(value).Decode(); err == nil {
 			slices = append(slices, v)
@@ -29,14 +28,13 @@ func (rb *redisBufferImpl) Read() []buffer.RowSlice {
 			log.Printf("redis buffer read err: %v\n", err.Error())
 		}
 	}
-
 	return slices
 }
 
-func (rb *redisBufferImpl) Len() int {
-	return int(rb.client.LLen(rb.context, rb.bucket).Val())
+func (r *redisBuffer) Len() int {
+	return int(r.client.LLen(r.context, r.bucket).Val())
 }
 
-func (rb *redisBufferImpl) Flush() {
-	rb.client.LTrim(rb.context, rb.bucket, rb.bufferSize, -1).Val()
+func (r *redisBuffer) Flush() {
+	r.client.LTrim(r.context, r.bucket, r.bufferSize, -1).Val()
 }
