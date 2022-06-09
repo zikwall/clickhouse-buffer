@@ -1,4 +1,4 @@
-package buffer
+package cx
 
 import (
 	"reflect"
@@ -12,8 +12,8 @@ type RowTestMock struct {
 	insertTS time.Time
 }
 
-func (vm RowTestMock) Row() RowSlice {
-	return RowSlice{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
+func (vm RowTestMock) Row() Vector {
+	return Vector{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
 }
 
 func TestRow(t *testing.T) {
@@ -27,7 +27,7 @@ func TestRow(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		value, err := RowDecoded(encoded).Decode()
+		value, err := VectorDecoded(encoded).Decode()
 		if err != nil {
 			t.Fatal(err)
 		}

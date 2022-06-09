@@ -1,4 +1,4 @@
-package clickhousebuffer
+package cx
 
 import "sync/atomic"
 

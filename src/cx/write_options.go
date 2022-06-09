@@ -1,4 +1,4 @@
-package clickhousebuffer
+package cx
 
 // Options holds write configuration properties
 type Options struct {

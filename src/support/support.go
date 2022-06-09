@@ -1,11 +1,9 @@
-package database
+package support
 
 import (
-	"context"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
 const (
@@ -69,14 +67,4 @@ func IsResendAvailable(err error) bool {
 		return false
 	}
 	return true
-}
-
-type View struct {
-	Name    string
-	Columns []string
-}
-
-type Clickhouse interface {
-	Insert(context.Context, View, []buffer.RowSlice) (uint64, error)
-	Close() error
 }

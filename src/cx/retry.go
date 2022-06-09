@@ -1,4 +1,4 @@
-package clickhousebuffer
+package cx
 
 import (
 	"context"
@@ -8,8 +8,7 @@ import (
 	"github.com/Rican7/retry/backoff"
 	"github.com/Rican7/retry/strategy"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	"github.com/zikwall/clickhouse-buffer/v2/src/support"
 )
 
 const (
@@ -40,13 +39,13 @@ const (
 )
 
 type Retryable interface {
-	Retry(packet *retryPacket)
+	Retry(packet *RetryPacket)
 	Metrics() (uint64, uint64, uint64)
 }
 
 type Queueable interface {
-	Queue(packet *retryPacket)
-	Retries() <-chan *retryPacket
+	Queue(packet *RetryPacket)
+	Retries() <-chan *RetryPacket
 }
 
 type Closable interface {
@@ -54,10 +53,16 @@ type Closable interface {
 	CloseMessage() string
 }
 
-type retryPacket struct {
-	view     database.View
-	btc      *buffer.Batch
+type RetryPacket struct {
+	view     View
+	batch    *Batch
 	tryCount uint8
+}
+
+func NewRetryPacket(view View, batch *Batch) *RetryPacket {
+	return &RetryPacket{
+		view: view, batch: batch,
+	}
 }
 
 type retryImpl struct {
@@ -92,7 +97,7 @@ func (r *retryImpl) Metrics() (successfully, failed, progress uint64) {
 	return r.successfully.Val(), r.failed.Val(), r.progress.Val()
 }
 
-func (r *retryImpl) Retry(packet *retryPacket) {
+func (r *retryImpl) Retry(packet *RetryPacket) {
 	if value := r.progress.Inc(); value >= defaultRetryChanSize {
 		r.logger.Log(queueIsFull)
 		return
@@ -126,7 +131,7 @@ func (r *retryImpl) backoffRetry(ctx context.Context) {
 	}
 }
 
-func (r *retryImpl) action(ctx context.Context, view database.View, btc *buffer.Batch) retry.Action {
+func (r *retryImpl) action(ctx context.Context, view View, btc *Batch) retry.Action {
 	return func(attempt uint) error {
 		affected, err := r.writer.Write(ctx, view, btc)
 		if err != nil {
@@ -145,11 +150,11 @@ func (r *retryImpl) action(ctx context.Context, view database.View, btc *buffer.
 // if error is not in list of not allowed,
 // and the number of repetition cycles has not been exhausted,
 // try to re-send it to the processing queue
-func (r *retryImpl) resend(packet *retryPacket, err error) bool {
-	if (packet.tryCount < defaultCycloCount) && database.IsResendAvailable(err) {
-		r.Retry(&retryPacket{
+func (r *retryImpl) resend(packet *RetryPacket, err error) bool {
+	if (packet.tryCount < defaultCycloCount) && support.IsResendAvailable(err) {
+		r.Retry(&RetryPacket{
 			view:     packet.view,
-			btc:      packet.btc,
+			batch:    packet.batch,
 			tryCount: packet.tryCount + 1,
 		})
 		if r.isDebug {
@@ -160,12 +165,12 @@ func (r *retryImpl) resend(packet *retryPacket, err error) bool {
 	return false
 }
 
-func (r *retryImpl) handlePacket(ctx context.Context, packet *retryPacket) {
+func (r *retryImpl) handlePacket(ctx context.Context, packet *RetryPacket) {
 	r.progress.Dec()
 	if r.isDebug {
 		r.logger.Log(handleRetryMsg)
 	}
-	if err := retry.Retry(r.action(ctx, packet.view, packet.btc), r.limit, r.backoff); err != nil {
+	if err := retry.Retry(r.action(ctx, packet.view, packet.batch), r.limit, r.backoff); err != nil {
 		r.logger.Logf("%s: %v", limitOfRetries, err)
 		if !r.resend(packet, err) {
 			// otherwise, increase failed counter and report in logs that the package is always lost

@@ -8,7 +8,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
-	cxbuffer "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/cx"
 )
 
 type ExampleTable struct {
@@ -17,8 +17,8 @@ type ExampleTable struct {
 	InsertTS time.Time
 }
 
-func (t *ExampleTable) Row() cxbuffer.RowSlice {
-	return cxbuffer.RowSlice{t.ID, t.UUID, t.InsertTS.Format(time.RFC822)}
+func (t *ExampleTable) Row() cx.Vector {
+	return cx.Vector{t.ID, t.UUID, t.InsertTS.Format(time.RFC822)}
 }
 
 func ExampleTableName() string {

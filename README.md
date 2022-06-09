@@ -9,7 +9,7 @@
 ## Install
 
 - for go-clickhouse v1 `$ go get -u github.com/zikwall/clickhouse-buffer`
-- for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v2`
+- for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v3`
 
 ### Why and why
 
@@ -33,6 +33,7 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 
 - [x] **in-memory** - use native channels and slices
 - [x] **redis** - use redis server as queue and buffer
+- [x] **in-memory-sync** - if you get direct access to buffer, it will help to avoid data race
 - [x] **retries** - resending "broken" or for some reason not sent packets
 
 ### Usage
@@ -41,8 +42,8 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 import (
     "database/sql"
 
-    cxnative "github.com/zikwall/clickhouse-buffer/v2/src/database/native"
-    cxsql "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+    "github.com/zikwall/clickhouse-buffer/v2/src/database/cxnative"
+    "github.com/zikwall/clickhouse-buffer/v2/src/database/cxsql"
 )
 
 // if you already have a connection to Clickhouse you can just use wrappers
@@ -57,7 +58,7 @@ ch := cxsql.NewClickhouseWithConn(conn: *sql.DB)
 // package can do it for you, just call the connection option you need:
 
 // with native interface
-ch, conn, err := cxnative.NewClickhouse(ctx,&clickhouse.Options{
+ch, conn, err := cxnative.NewClickhouse(ctx, &clickhouse.Options{
         Addr: ctx.StringSlice("clickhouse-host"),
         Auth: clickhouse.Auth{
             Database:  ctx.String("clickhouse-database"),
@@ -96,17 +97,16 @@ ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
 
 ```go
 import (
-    cx "github.com/zikwall/clickhouse-buffer/v2"
-    cxbuffer "github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-    cxmemory "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
-    cxredis "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
+    "github.com/zikwall/clickhouse-buffer/v2/src/buffer/cxmem"
+    "github.com/zikwall/clickhouse-buffer/v2/src/cx"
+    "github.com/zikwall/clickhouse-buffer/v2/src/database/cxnative"
 )
 // create root client
 client := cx.NewClientWithOptions(ctx, ch,
     cx.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
 // create buffer engine
-buffer := cxmemory.NewBuffer(
+buffer := cxmem.NewBuffer(
     client.Options().BatchSize(),
 )
 // or use redis
@@ -114,10 +114,10 @@ buffer := cxredis.NewBuffer(
     contetx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
 // create new writer api: table name with columns
-writeAPI := client.Writer(cxbuffer.View{
-    Name:    "clickhouse_database.clickhouse_table", 
-    Columns: []string{"id", "uuid", "insert_ts"},
-}, buffer)
+writeAPI := client.Writer(
+	cx.NewView("clickhouse_database.clickhouse_table", []string{"id", "uuid", "insert_ts"}), 
+	buffer,
+)
 
 // define your custom data structure
 type MyCustomDataView struct {
@@ -125,9 +125,9 @@ type MyCustomDataView struct {
 	uuid     string
 	insertTS time.Time
 }
-// and implement cxbuffer.Inline interface
-func (t *MyCustomDataView) Row() cxbuffer.RowSlice {
-	return cxbuffer.RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
+// and implement cxbuffer.Vectorable interface
+func (t *MyCustomDataView) Row() cx.Vector {
+	return cx.Vector{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
 }
 // async write your data
 writeAPI.WriteRow(&MyCustomDataView{
@@ -150,12 +150,12 @@ Using the blocking writer interface
 
 ```go
 // create new writer api: table name with columns
-writerBlocking := client.WriterBlocking(cxbuffer.View{
+writerBlocking := client.WriterBlocking(cx.View{
     Name:    "clickhouse_database.clickhouse_table",
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 // non-asynchronous writing of data directly to Clickhouse
-err := writerBlocking.WriteRow(ctx, []MyCustomDataView{
+err := writerBlocking.WriteRow(ctx, []&MyCustomDataView{
     {
         id: 1, uuid: "1", insertTS: time.Now(),
     },

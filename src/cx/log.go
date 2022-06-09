@@ -1,4 +1,4 @@
-package clickhousebuffer
+package cx
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type Logger interface {
 
 type defaultLogger struct{}
 
-func newDefaultLogger() Logger {
+func NewDefaultLogger() Logger {
 	d := &defaultLogger{}
 	return d
 }

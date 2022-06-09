@@ -1,4 +1,4 @@
-package redis
+package cxredis
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v2/src/cx"
 )
 
 const prefix = "ch_buffer"
@@ -22,7 +22,7 @@ type redisBuffer struct {
 	bufferSize int64
 }
 
-func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (buffer.Buffer, error) {
+func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (cx.Buffer, error) {
 	return &redisBuffer{
 		client:     rdb,
 		context:    ctx,
