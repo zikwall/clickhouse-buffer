@@ -34,7 +34,7 @@ jobs:
       - name: Build
         env:
           GOPROXY: "https://proxy.golang.org"
-        run: go build .
+        run: go build ./example/cmd/simple/main.go
 
       - name: Test
         env:

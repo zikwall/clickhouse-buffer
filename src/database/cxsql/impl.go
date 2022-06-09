@@ -1,4 +1,4 @@
-package sql
+package cxsql
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/support"
 )
 
 type clickhouseSQL struct {
@@ -33,7 +33,7 @@ func insertQuery(table string, cols []string) string {
 // There is no support for user interfaces as well as simple execution of an already prepared request
 // The entire batch bid is implemented through so-called "transactions",
 // although Clickhouse does not support them - it is only a client solution for preparing requests
-func (c *clickhouseSQL) Insert(ctx context.Context, view database.View, rows []buffer.RowSlice) (uint64, error) {
+func (c *clickhouseSQL) Insert(ctx context.Context, view cx.View, rows []cx.Vector) (uint64, error) {
 	tx, err := c.conn.Begin()
 	if err != nil {
 		return 0, err
@@ -82,18 +82,18 @@ func NewClickhouse(
 	options *clickhouse.Options,
 	runtimeOpts *RuntimeOptions,
 ) (
-	database.Clickhouse,
+	cx.Clickhouse,
 	*sql.DB,
 	error,
 ) {
 	if runtimeOpts.MaxIdleConns == 0 {
-		runtimeOpts.MaxIdleConns = database.GetDefaultMaxIdleConns()
+		runtimeOpts.MaxIdleConns = support.GetDefaultMaxIdleConns()
 	}
 	if runtimeOpts.MaxOpenConns == 0 {
-		runtimeOpts.MaxOpenConns = database.GetDefaultMaxOpenConns()
+		runtimeOpts.MaxOpenConns = support.GetDefaultMaxOpenConns()
 	}
 	if runtimeOpts.ConnMaxLifetime == 0 {
-		runtimeOpts.ConnMaxLifetime = database.GetDefaultConnMaxLifetime()
+		runtimeOpts.ConnMaxLifetime = support.GetDefaultConnMaxLifetime()
 	}
 	conn := clickhouse.OpenDB(options)
 	conn.SetMaxIdleConns(runtimeOpts.MaxIdleConns)
@@ -112,13 +112,13 @@ func NewClickhouse(
 	}
 	return &clickhouseSQL{
 		conn:          conn,
-		insertTimeout: database.GetDefaultInsertDurationTimeout(),
+		insertTimeout: support.GetDefaultInsertDurationTimeout(),
 	}, conn, nil
 }
 
-func NewClickhouseWithConn(conn *sql.DB) database.Clickhouse {
+func NewClickhouseWithConn(conn *sql.DB) cx.Clickhouse {
 	return &clickhouseSQL{
 		conn:          conn,
-		insertTimeout: database.GetDefaultInsertDurationTimeout(),
+		insertTimeout: support.GetDefaultInsertDurationTimeout(),
 	}
 }

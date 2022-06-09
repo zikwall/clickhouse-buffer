@@ -1,12 +1,12 @@
-package redis
+package cxredis
 
 import (
 	"log"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
-func (r *redisBuffer) Write(row buffer.RowSlice) {
+func (r *redisBuffer) Write(row cx.Vector) {
 	buf, err := row.Encode()
 	if err == nil {
 		err = r.client.RPush(r.context, r.bucket, buf).Err()
@@ -18,11 +18,11 @@ func (r *redisBuffer) Write(row buffer.RowSlice) {
 	}
 }
 
-func (r *redisBuffer) Read() []buffer.RowSlice {
+func (r *redisBuffer) Read() []cx.Vector {
 	values := r.client.LRange(r.context, r.bucket, 0, r.bufferSize).Val()
-	slices := make([]buffer.RowSlice, 0, len(values))
+	slices := make([]cx.Vector, 0, len(values))
 	for _, value := range values {
-		if v, err := buffer.RowDecoded(value).Decode(); err == nil {
+		if v, err := cx.VectorDecoded(value).Decode(); err == nil {
 			slices = append(slices, v)
 		} else {
 			log.Printf("redis buffer read err: %v\n", err.Error())

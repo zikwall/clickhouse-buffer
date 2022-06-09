@@ -11,11 +11,10 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/go-redis/redis/v8"
 
-	cx "github.com/zikwall/clickhouse-buffer/v2"
-	"github.com/zikwall/clickhouse-buffer/v2/example/pkg/tables"
-	cxredis "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
-	cxbase "github.com/zikwall/clickhouse-buffer/v2/src/database"
-	cxsql "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/database/cxsql"
 )
 
 func main() {
@@ -61,10 +60,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	writeAPI := client.Writer(cxbase.View{
-		Name:    tables.ExampleTableName(),
-		Columns: tables.ExampleTableColumns(),
-	}, rxbuffer)
+	writeAPI := client.Writer(cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()), rxbuffer)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

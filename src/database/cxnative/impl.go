@@ -1,4 +1,4 @@
-package native
+package cxnative
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/support"
 )
 
 type clickhouseNative struct {
@@ -25,7 +25,7 @@ func nativeInsertQuery(table string, cols []string) string {
 	return prepared
 }
 
-func (c *clickhouseNative) Insert(ctx context.Context, view database.View, rows []buffer.RowSlice) (uint64, error) {
+func (c *clickhouseNative) Insert(ctx context.Context, view cx.View, rows []cx.Vector) (uint64, error) {
 	var err error
 	timeoutContext, cancel := context.WithTimeout(ctx, c.insertTimeout)
 	defer cancel()
@@ -51,15 +51,15 @@ func (c *clickhouseNative) Close() error {
 	return c.conn.Close()
 }
 
-func NewClickhouse(ctx context.Context, options *clickhouse.Options) (database.Clickhouse, driver.Conn, error) {
+func NewClickhouse(ctx context.Context, options *clickhouse.Options) (cx.Clickhouse, driver.Conn, error) {
 	if options.MaxIdleConns == 0 {
-		options.MaxIdleConns = database.GetDefaultMaxIdleConns()
+		options.MaxIdleConns = support.GetDefaultMaxIdleConns()
 	}
 	if options.MaxOpenConns == 0 {
-		options.MaxOpenConns = database.GetDefaultMaxOpenConns()
+		options.MaxOpenConns = support.GetDefaultMaxOpenConns()
 	}
 	if options.ConnMaxLifetime == 0 {
-		options.ConnMaxLifetime = database.GetDefaultConnMaxLifetime()
+		options.ConnMaxLifetime = support.GetDefaultConnMaxLifetime()
 	}
 	conn, err := clickhouse.Open(options)
 	if err != nil {
@@ -78,13 +78,13 @@ func NewClickhouse(ctx context.Context, options *clickhouse.Options) (database.C
 	}
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: database.GetDefaultInsertDurationTimeout(),
+		insertTimeout: support.GetDefaultInsertDurationTimeout(),
 	}, conn, nil
 }
 
-func NewClickhouseWithConn(conn driver.Conn) database.Clickhouse {
+func NewClickhouseWithConn(conn driver.Conn) cx.Clickhouse {
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: database.GetDefaultInsertDurationTimeout(),
+		insertTimeout: support.GetDefaultInsertDurationTimeout(),
 	}
 }

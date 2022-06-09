@@ -10,11 +10,10 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	cx "github.com/zikwall/clickhouse-buffer/v2"
-	"github.com/zikwall/clickhouse-buffer/v2/example/pkg/tables"
-	cxmemory "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
-	cxbase "github.com/zikwall/clickhouse-buffer/v2/src/database"
-	cxsql "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/database/cxsql"
 )
 
 func main() {
@@ -52,10 +51,10 @@ func main() {
 		cx.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(5),
 	)
 
-	writeAPI := client.Writer(cxbase.View{
-		Name:    tables.ExampleTableName(),
-		Columns: tables.ExampleTableColumns(),
-	}, cxmemory.NewBuffer(client.Options().BatchSize()))
+	writeAPI := client.Writer(
+		cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
+		cxmem.NewBuffer(client.Options().BatchSize()),
+	)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

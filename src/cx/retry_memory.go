@@ -1,21 +1,21 @@
-package clickhousebuffer
+package cx
 
 type imMemoryQueueEngine struct {
-	retries chan *retryPacket
+	retries chan *RetryPacket
 }
 
-func newImMemoryQueueEngine() Queueable {
+func NewImMemoryQueueEngine() Queueable {
 	r := &imMemoryQueueEngine{
-		retries: make(chan *retryPacket, defaultRetryChanSize),
+		retries: make(chan *RetryPacket, defaultRetryChanSize),
 	}
 	return r
 }
 
-func (r *imMemoryQueueEngine) Queue(packet *retryPacket) {
+func (r *imMemoryQueueEngine) Queue(packet *RetryPacket) {
 	r.retries <- packet
 }
 
-func (r *imMemoryQueueEngine) Retries() <-chan *retryPacket {
+func (r *imMemoryQueueEngine) Retries() <-chan *RetryPacket {
 	return r.retries
 }
 

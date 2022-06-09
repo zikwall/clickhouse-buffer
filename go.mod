@@ -1,4 +1,4 @@
-module github.com/zikwall/clickhouse-buffer/v2
+module github.com/zikwall/clickhouse-buffer/v3
 
 go 1.18
 
