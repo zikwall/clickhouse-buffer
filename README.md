@@ -72,8 +72,7 @@ ch, conn, err := cxnative.NewClickhouse(ctx,&clickhouse.Options{
             Method: clickhouse.CompressionLZ4,
         },
         Debug: ctx.Bool("debug"),
-    },
-)
+})
 // or with database/sql interface
 ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
         Addr: ctx.StringSlice("clickhouse-host"),
@@ -90,8 +89,7 @@ ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
             Method: clickhouse.CompressionLZ4,
         },
         Debug: ctx.Bool("debug"),
-    }, &cxsql.RuntimeOptions{},
-)
+}, &cxsql.RuntimeOptions{})
 ```
 
 #### Create main data streamer client and write data
@@ -104,7 +102,7 @@ import (
     cxredis "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
 )
 // create root client
-client := cxbuffer.NewClientWithOptions(ctx, ch,
+client := cx.NewClientWithOptions(ctx, ch,
     cx.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
 )
 // create buffer engine
@@ -132,7 +130,7 @@ func (t *MyCustomDataView) Row() cxbuffer.RowSlice {
 	return cxbuffer.RowSlice{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
 }
 // async write your data
-writeAPI.WriteRow(MyCustomDataView{
+writeAPI.WriteRow(&MyCustomDataView{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 ```

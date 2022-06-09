@@ -4,28 +4,30 @@ import (
 	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
 )
 
-type inMemoryBufferImpl struct {
-	writeBuffer []buffer.RowSlice
+type memory struct {
+	buffer []buffer.RowSlice
+	size   uint
 }
 
 func NewBuffer(bufferSize uint) buffer.Buffer {
-	return &inMemoryBufferImpl{
-		writeBuffer: make([]buffer.RowSlice, 0, bufferSize+1),
+	return &memory{
+		buffer: make([]buffer.RowSlice, 0, bufferSize+1),
+		size:   bufferSize + 1,
 	}
 }
 
-func (in *inMemoryBufferImpl) Write(row buffer.RowSlice) {
-	in.writeBuffer = append(in.writeBuffer, row)
+func (i *memory) Write(row buffer.RowSlice) {
+	i.buffer = append(i.buffer, row)
 }
 
-func (in *inMemoryBufferImpl) Read() []buffer.RowSlice {
-	return in.writeBuffer
+func (i *memory) Read() []buffer.RowSlice {
+	return i.buffer
 }
 
-func (in *inMemoryBufferImpl) Len() int {
-	return len(in.writeBuffer)
+func (i *memory) Len() int {
+	return len(i.buffer)
 }
 
-func (in *inMemoryBufferImpl) Flush() {
-	in.writeBuffer = in.writeBuffer[:0]
+func (i *memory) Flush() {
+	i.buffer = make([]buffer.RowSlice, 0, i.size)
 }
