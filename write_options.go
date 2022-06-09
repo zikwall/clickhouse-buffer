@@ -1,5 +1,10 @@
 package clickhousebuffer
 
+import (
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/retry"
+)
+
 // Options holds write configuration properties
 type Options struct {
 	// Maximum number of rows sent to server in single request. Default 5000
@@ -11,9 +16,9 @@ type Options struct {
 	// Retry is enabled
 	isRetryEnabled bool
 	// Logger with
-	logger Logger
+	logger cx.Logger
 	// Queueable with
-	queue Queueable
+	queue retry.Queueable
 }
 
 // BatchSize returns size of batch
@@ -48,12 +53,12 @@ func (o *Options) SetRetryIsEnabled(enabled bool) *Options {
 	return o
 }
 
-func (o *Options) SetLogger(logger Logger) *Options {
+func (o *Options) SetLogger(logger cx.Logger) *Options {
 	o.logger = logger
 	return o
 }
 
-func (o *Options) SetQueueEngine(queue Queueable) *Options {
+func (o *Options) SetQueueEngine(queue retry.Queueable) *Options {
 	o.queue = queue
 	return o
 }

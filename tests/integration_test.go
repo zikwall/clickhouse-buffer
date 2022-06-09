@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package clickhousebuffer
+package tests
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,11 +18,11 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis/v8"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	redis2 "github.com/zikwall/clickhouse-buffer/v2/src/buffer/redis"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database/native"
-	sqlCh "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
+	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxsql"
 )
 
 const integrationTableName = "default.test_integration_xxx_xxx"
@@ -32,8 +33,8 @@ type integrationRow struct {
 	insertTS time.Time
 }
 
-func (i integrationRow) Row() buffer.RowSlice {
-	return buffer.RowSlice{i.id, i.uuid, i.insertTS.Format(time.RFC822)}
+func (i integrationRow) Row() cx.Vector {
+	return cx.Vector{i.id, i.uuid, i.insertTS.Format(time.RFC822)}
 }
 
 // This test is a complete simulation of the work of the buffer bundle (Redis) and the Clickhouse data warehouse
@@ -66,10 +67,13 @@ func TestNative(t *testing.T) {
 	// STEP 5: Write own data to redis
 	writeAPI := useWriteAPI(client, redisBuffer)
 	var errorsSlice []error
+	mu := &sync.RWMutex{}
 	errorsCh := writeAPI.Errors()
 	go func() {
 		for err := range errorsCh {
+			mu.Lock()
 			errorsSlice = append(errorsSlice, err)
+			mu.Unlock()
 		}
 	}()
 	writeDataToBuffer(writeAPI)
@@ -89,6 +93,8 @@ func TestNative(t *testing.T) {
 	}
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
 	<-time.After(600 * time.Millisecond)
+	mu.RLock()
+	defer mu.RUnlock()
 	if len(errorsSlice) != 1 {
 		t.Fatalf("failed, the clickhouse was expected receive one error, received: %d", len(errorsSlice))
 	}
@@ -124,10 +130,13 @@ func TestSQL(t *testing.T) {
 	// STEP 5: Write own data to redis
 	writeAPI := useWriteAPI(client, redisBuffer)
 	var errorsSlice []error
+	mu := &sync.RWMutex{}
 	errorsCh := writeAPI.Errors()
 	go func() {
 		for err := range errorsCh {
+			mu.Lock()
 			errorsSlice = append(errorsSlice, err)
+			mu.Unlock()
 		}
 	}()
 	writeDataToBuffer(writeAPI)
@@ -147,6 +156,8 @@ func TestSQL(t *testing.T) {
 	}
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
 	<-time.After(600 * time.Millisecond)
+	mu.RLock()
+	defer mu.RUnlock()
 	if len(errorsSlice) != 1 {
 		t.Fatalf("failed, the clickhouse was expected receive one error, received: %d", len(errorsSlice))
 	}
@@ -323,54 +334,51 @@ func useOptions() *clickhouse.Options {
 	}
 }
 
-func useClickhousePool(ctx context.Context) (driver.Conn, database.Clickhouse, error) {
-	nativeClickhouse, conn, err := native.NewClickhouse(ctx, useOptions())
+func useClickhousePool(ctx context.Context) (driver.Conn, cx.Clickhouse, error) {
+	nativeClickhouse, conn, err := cxnative.NewClickhouse(ctx, useOptions())
 	if err != nil {
 		return nil, nil, err
 	}
 	return conn, nativeClickhouse, nil
 }
 
-func useClickhouseSQLPool(ctx context.Context) (*sql.DB, database.Clickhouse, error) {
-	sqlClickhouse, conn, err := sqlCh.NewClickhouse(ctx, useOptions(), &sqlCh.RuntimeOptions{})
+func useClickhouseSQLPool(ctx context.Context) (*sql.DB, cx.Clickhouse, error) {
+	sqlClickhouse, conn, err := cxsql.NewClickhouse(ctx, useOptions(), &cxsql.RuntimeOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
 	return conn, sqlClickhouse, nil
 }
 
-func useCommonClient(ctx context.Context, ch database.Clickhouse) Client {
-	return NewClientWithOptions(ctx, ch,
-		DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
+func useCommonClient(ctx context.Context, ch cx.Clickhouse) clickhousebuffer.Client {
+	return clickhousebuffer.NewClientWithOptions(ctx, ch,
+		clickhousebuffer.DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
 	)
 }
 
 func useClientAndRedisBuffer(
 	ctx context.Context,
-	ch database.Clickhouse,
+	ch cx.Clickhouse,
 	db *redis.Client,
 ) (
-	Client,
-	buffer.Buffer,
+	clickhousebuffer.Client,
+	cx.Buffer,
 	error,
 ) {
 	client := useCommonClient(ctx, ch)
-	buf, err := redis2.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
+	buf, err := cxredis.NewBuffer(ctx, db, "bucket", client.Options().BatchSize())
 	if err != nil {
 		return nil, nil, fmt.Errorf("could't create redis buffer: %s", err)
 	}
 	return client, buf, nil
 }
 
-func useWriteAPI(client Client, buf buffer.Buffer) Writer {
-	writeAPI := client.Writer(database.View{
-		Name:    integrationTableName,
-		Columns: []string{"id", "uuid", "insert_ts"},
-	}, buf)
+func useWriteAPI(client clickhousebuffer.Client, buf cx.Buffer) clickhousebuffer.Writer {
+	writeAPI := client.Writer(cx.NewView(integrationTableName, []string{"id", "uuid", "insert_ts"}), buf)
 	return writeAPI
 }
 
-func writeDataToBuffer(writeAPI Writer) {
+func writeDataToBuffer(writeAPI clickhousebuffer.Writer) {
 	writeAPI.WriteRow(integrationRow{
 		id: 1, uuid: "1", insertTS: time.Now(),
 	})
@@ -390,7 +398,7 @@ func writeDataToBuffer(writeAPI Writer) {
 	<-time.After(50 * time.Millisecond)
 }
 
-func checksBuffer(buf buffer.Buffer) error {
+func checksBuffer(buf cx.Buffer) error {
 	// try read from redis buffer before flushing data in buffer
 	rows := buf.Read()
 	if len(rows) != 5 {

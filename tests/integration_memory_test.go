@@ -1,16 +1,16 @@
 //go:build integration
 // +build integration
 
-package clickhousebuffer
+package tests
 
 import (
 	"context"
 	"log"
 	"testing"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxsyncmem"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
 // nolint:dupl // it's OK
@@ -73,7 +73,7 @@ func TestSQLMemory(t *testing.T) {
 	}
 }
 
-func useClientAndMemoryBuffer(ctx context.Context, clickhouse database.Clickhouse) (Client, buffer.Buffer) {
+func useClientAndMemoryBuffer(ctx context.Context, clickhouse cx.Clickhouse) (clickhousebuffer.Client, cx.Buffer) {
 	client := useCommonClient(ctx, clickhouse)
-	return client, memory.NewBuffer(client.Options().BatchSize())
+	return client, cxsyncmem.NewBuffer(client.Options().BatchSize())
 }

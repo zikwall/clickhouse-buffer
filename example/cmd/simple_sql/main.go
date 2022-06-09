@@ -10,11 +10,11 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	cx "github.com/zikwall/clickhouse-buffer/v2"
-	"github.com/zikwall/clickhouse-buffer/v2/example/pkg/tables"
-	cxmemory "github.com/zikwall/clickhouse-buffer/v2/src/buffer/memory"
-	cxbase "github.com/zikwall/clickhouse-buffer/v2/src/database"
-	cxsql "github.com/zikwall/clickhouse-buffer/v2/src/database/sql"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
+	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxsql"
 )
 
 func main() {
@@ -48,14 +48,14 @@ func main() {
 	if err := tables.CreateTableSQL(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
-	client := cx.NewClientWithOptions(ctx, ch,
-		cx.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(5),
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch,
+		clickhousebuffer.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(5),
 	)
 
-	writeAPI := client.Writer(cxbase.View{
-		Name:    tables.ExampleTableName(),
-		Columns: tables.ExampleTableColumns(),
-	}, cxmemory.NewBuffer(client.Options().BatchSize()))
+	writeAPI := client.Writer(
+		cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
+		cxmem.NewBuffer(client.Options().BatchSize()),
+	)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

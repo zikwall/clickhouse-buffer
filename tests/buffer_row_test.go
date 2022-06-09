@@ -1,9 +1,11 @@
-package buffer
+package tests
 
 import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
 type RowTestMock struct {
@@ -12,8 +14,8 @@ type RowTestMock struct {
 	insertTS time.Time
 }
 
-func (vm RowTestMock) Row() RowSlice {
-	return RowSlice{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
+func (vm RowTestMock) Row() cx.Vector {
+	return cx.Vector{vm.id, vm.uuid, vm.insertTS.Format(time.RFC822)}
 }
 
 func TestRow(t *testing.T) {
@@ -27,7 +29,7 @@ func TestRow(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		value, err := RowDecoded(encoded).Decode()
+		value, err := cx.VectorDecoded(encoded).Decode()
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -1,9 +1,9 @@
-module github.com/zikwall/clickhouse-buffer/v2
+module github.com/zikwall/clickhouse-buffer/v3
 
 go 1.18
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.0.14
+	github.com/ClickHouse/clickhouse-go/v2 v2.0.15
 	github.com/Rican7/retry v0.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 )
