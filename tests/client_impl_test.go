@@ -1,4 +1,4 @@
-package clickhousebuffer
+package tests
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxsyncmem"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
 var (

@@ -1,7 +1,7 @@
 package cxmem
 
 import (
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 )
 
 type memory struct {

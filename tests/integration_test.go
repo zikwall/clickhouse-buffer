@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package clickhousebuffer
+package tests
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis/v8"
 
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 	"github.com/zikwall/clickhouse-buffer/v3/src/database/cxnative"
 	"github.com/zikwall/clickhouse-buffer/v3/src/database/cxsql"
 )

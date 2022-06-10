@@ -1,15 +1,15 @@
 //go:build integration
 // +build integration
 
-package clickhousebuffer
+package tests
 
 import (
 	"context"
 	"log"
 	"testing"
 
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxsyncmem"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
 // nolint:dupl // it's OK

@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 )
 
 const prefix = "ch_buffer"

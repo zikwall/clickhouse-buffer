@@ -97,8 +97,8 @@ ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
 
 ```go
 import (
+    cx "github.com/zikwall/clickhouse-buffer/v3"
     "github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
-    "github.com/zikwall/clickhouse-buffer/v3/src/cx"
     "github.com/zikwall/clickhouse-buffer/v3/src/database/cxnative"
 )
 // create root client

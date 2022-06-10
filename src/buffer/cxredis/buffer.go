@@ -3,7 +3,7 @@ package cxredis
 import (
 	"log"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 )
 
 func (r *redisBuffer) Write(row cx.Vector) {

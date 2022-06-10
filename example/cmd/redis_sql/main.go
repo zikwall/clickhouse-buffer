@@ -11,9 +11,9 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/go-redis/redis/v8"
 
+	cx "github.com/zikwall/clickhouse-buffer/v3"
 	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
 	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 	"github.com/zikwall/clickhouse-buffer/v3/src/database/cxsql"
 )
 
