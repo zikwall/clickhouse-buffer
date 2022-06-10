@@ -22,7 +22,9 @@ func (i *memory) Write(row buffer.RowSlice) {
 }
 
 func (i *memory) Read() []buffer.RowSlice {
-	return i.buffer
+	snapshot := make([]buffer.RowSlice, len(i.buffer))
+	copy(snapshot, i.buffer)
+	return snapshot
 }
 
 func (i *memory) Len() int {
@@ -30,5 +32,5 @@ func (i *memory) Len() int {
 }
 
 func (i *memory) Flush() {
-	i.buffer = make([]buffer.RowSlice, 0, i.size)
+	i.buffer = i.buffer[:0]
 }
