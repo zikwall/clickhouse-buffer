@@ -1,11 +1,12 @@
 package clickhousebuffer
 
 import (
-	"log"
+	"context"
+	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v2/src/buffer"
-	"github.com/zikwall/clickhouse-buffer/v2/src/database"
+	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
 )
 
 // Writer is client interface with non-blocking methods for writing rows asynchronously in batches into an Clickhouse server.
@@ -13,146 +14,185 @@ import (
 // When using multiple goroutines for writing, use a single WriteAPI instance in all goroutines.
 type Writer interface {
 	// WriteRow writes asynchronously line protocol record into bucket.
-	WriteRow(vector buffer.Inline)
-	// Flush forces all pending writes from the buffer to be sent
-	Flush()
+	WriteRow(vector cx.Vectorable)
 	// Errors returns a channel for reading errors which occurs during async writes.
 	Errors() <-chan error
 	// Close writer
 	Close()
 }
 
-type WriterImpl struct {
-	view         database.View
-	streamer     Client
-	writeBuffer  buffer.Buffer
-	writeCh      chan *buffer.Batch
+type writer struct {
+	context      context.Context
+	view         cx.View
+	client       Client
+	bufferEngine cx.Buffer
+	writeOptions *Options
 	errCh        chan error
-	bufferCh     chan buffer.RowSlice
-	bufferFlush  chan struct{}
+	clickhouseCh chan *cx.Batch
+	bufferCh     chan cx.Vector
 	doneCh       chan struct{}
 	writeStop    chan struct{}
 	bufferStop   chan struct{}
-	writeOptions *Options
+	mu           *sync.RWMutex
+	isOpenErr    int32
 }
 
 // NewWriter returns new non-blocking write client for writing rows to Clickhouse table
-func NewWriter(client Client, view database.View, buf buffer.Buffer, writeOptions *Options) Writer {
-	w := &WriterImpl{
+func NewWriter(ctx context.Context, client Client, view cx.View, engine cx.Buffer) Writer {
+	w := &writer{
+		mu:           &sync.RWMutex{},
+		context:      ctx,
 		view:         view,
-		streamer:     client,
-		writeBuffer:  buf,
-		writeOptions: writeOptions,
-		writeCh:      make(chan *buffer.Batch),
-		bufferCh:     make(chan buffer.RowSlice),
-		bufferFlush:  make(chan struct{}),
-		doneCh:       make(chan struct{}),
-		bufferStop:   make(chan struct{}),
-		writeStop:    make(chan struct{}),
+		client:       client,
+		bufferEngine: engine,
+		writeOptions: client.Options(),
+		// write buffers
+		clickhouseCh: make(chan *cx.Batch),
+		bufferCh:     make(chan cx.Vector, 100),
+		// signals
+		doneCh:     make(chan struct{}),
+		bufferStop: make(chan struct{}),
+		writeStop:  make(chan struct{}),
 	}
-	go w.listenBufferWrite()
-	go w.listenStreamWrite()
+	go w.runBufferBridge()
+	go w.runClickhouseBridge()
 	return w
 }
 
 // WriteRow writes asynchronously line protocol record into bucket.
 // WriteRow adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *WriterImpl) WriteRow(rower buffer.Inline) {
+func (w *writer) WriteRow(rower cx.Vectorable) {
+	// maybe use atomic for check is closed
+	// atomic.LoadInt32(&w.isClosed) == 1
 	w.bufferCh <- rower.Row()
 }
 
 // Errors returns a channel for reading errors which occurs during async writes.
 // Must be called before performing any writes for errors to be collected.
 // The chan is unbuffered and must be drained or the writer will block.
-func (w *WriterImpl) Errors() <-chan error {
+func (w *writer) Errors() <-chan error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	if w.errCh == nil {
+		atomic.StoreInt32(&w.isOpenErr, 1)
 		w.errCh = make(chan error)
 	}
 	return w.errCh
 }
 
-// Flush forces all pending writes from the buffer to be sent
-func (w *WriterImpl) Flush() {
-	w.bufferFlush <- struct{}{}
-	w.awaitFlushing()
-}
-
-func (w *WriterImpl) awaitFlushing() {
-	// waiting buffer is flushed
-	<-time.After(time.Millisecond)
+func (w *writer) hasErrReader() bool {
+	return atomic.LoadInt32(&w.isOpenErr) > 0
 }
 
 // Close finishes outstanding write operations,
 // stop background routines and closes all channels
-func (w *WriterImpl) Close() {
-	if w.writeCh != nil {
-		// Flush outstanding metrics
-		w.Flush()
-
+func (w *writer) Close() {
+	if w.clickhouseCh != nil {
 		// stop and wait for write buffer
 		close(w.bufferStop)
 		<-w.doneCh
-
-		close(w.bufferFlush)
-		close(w.bufferCh)
 
 		// stop and wait for write clickhouse
 		close(w.writeStop)
 		<-w.doneCh
 
-		close(w.writeCh)
-		w.writeCh = nil
+		// stop ticker for flush to batch
+		// close(w.tickerStop)
+		// <-w.doneCh
+	}
+	if w.writeOptions.isDebug {
+		w.writeOptions.logger.Logf("close writer %s", w.view.Name)
+	}
+}
 
-		// close errors if open
+func (w *writer) flush() {
+	if w.writeOptions.isDebug {
+		w.writeOptions.logger.Logf("flush buffer: %s", w.view.Name)
+	}
+	w.clickhouseCh <- cx.NewBatch(w.bufferEngine.Read())
+	w.bufferEngine.Flush()
+}
+
+// func (w *writer) runTicker() {
+//	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
+//	w.writeOptions.logger.Logf("run ticker: %s", w.view.Name)
+//	defer func() {
+//		ticker.Stop()
+//		w.doneCh <- struct{}{}
+//		w.writeOptions.logger.Logf("stop ticker: %s", w.view.Name)
+//	}()
+//	for {
+//		select {
+//		case <-ticker.C:
+//			if w.bufferEngine.Len() > 0 {
+//				w.flush()
+//			}
+//		case <-w.tickerStop:
+//			return
+//		}
+//	}
+//}
+
+// writing to a temporary buffer to collect more data
+func (w *writer) runBufferBridge() {
+	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
+	defer func() {
+		ticker.Stop()
+		// flush last data
+		if w.bufferEngine.Len() > 0 {
+			w.flush()
+		}
+		// close buffer channel
+		close(w.bufferCh)
+		w.bufferCh = nil
+		// send signal, buffer listener is done
+		w.doneCh <- struct{}{}
+		w.writeOptions.logger.Logf("stop buffer bridge: %s", w.view.Name)
+	}()
+	w.writeOptions.logger.Logf("run buffer bridge: %s", w.view.Name)
+	for {
+		select {
+		case vector := <-w.bufferCh:
+			w.bufferEngine.Write(vector)
+			if w.bufferEngine.Len() == int(w.writeOptions.BatchSize()) {
+				w.flush()
+			}
+		case <-w.bufferStop:
+			return
+		case <-ticker.C:
+			if w.bufferEngine.Len() > 0 {
+				w.flush()
+			}
+		}
+	}
+}
+
+// asynchronously write to Clickhouse database in large batches
+func (w *writer) runClickhouseBridge() {
+	w.writeOptions.logger.Logf("run clickhouse bridge: %s", w.view.Name)
+	defer func() {
+		// close clickhouse channel
+		close(w.clickhouseCh)
+		w.clickhouseCh = nil
+		// close errors channel if it created
+		w.mu.Lock()
 		if w.errCh != nil {
 			close(w.errCh)
 			w.errCh = nil
 		}
-	}
-	if w.writeOptions.isDebug {
-		log.Printf("close writer %s", w.view.Name)
-	}
-}
-
-func (w *WriterImpl) flushBuffer() {
-	if w.writeBuffer.Len() > 0 {
-		w.writeCh <- buffer.NewBatch(w.writeBuffer.Read())
-		w.writeBuffer.Flush()
-	}
-}
-
-func (w *WriterImpl) listenBufferWrite() {
-	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
+		w.mu.Unlock()
+		// send signal, clickhouse listener is done
+		w.doneCh <- struct{}{}
+		w.writeOptions.logger.Logf("stop clickhouse bridge: %s", w.view.Name)
+	}()
 	for {
 		select {
-		case vector := <-w.bufferCh:
-			w.writeBuffer.Write(vector)
-			if w.writeBuffer.Len() == int(w.writeOptions.BatchSize()) {
-				w.flushBuffer()
-			}
-		case <-w.bufferStop:
-			w.flushBuffer()
-			w.doneCh <- struct{}{}
-			ticker.Stop()
-			return
-		case <-ticker.C:
-			w.flushBuffer()
-		case <-w.bufferFlush:
-			w.flushBuffer()
-		}
-	}
-}
-
-func (w *WriterImpl) listenStreamWrite() {
-	for {
-		select {
-		case btc := <-w.writeCh:
-			err := w.streamer.HandleStream(w.view, btc)
-			if err != nil && w.errCh != nil {
+		case batch := <-w.clickhouseCh:
+			err := w.client.WriteBatch(w.context, w.view, batch)
+			if err != nil && w.hasErrReader() {
 				w.errCh <- err
 			}
 		case <-w.writeStop:
-			w.doneCh <- struct{}{}
 			return
 		}
 	}

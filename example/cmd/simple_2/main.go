@@ -5,17 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/go-redis/redis/v8"
 
 	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
 	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
+	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
 	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
-	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxsql"
+	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
 )
 
 func main() {
@@ -23,13 +21,11 @@ func main() {
 	username := os.Getenv("CLICKHOUSE_USER")
 	database := os.Getenv("CLICKHOUSE_DB")
 	password := os.Getenv("CLICKHOUSE_PASS")
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPass := os.Getenv("REDIS_PASS")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
+	ch, conn, err := cxnative.NewClickhouse(ctx, &clickhouse.Options{
 		Addr: []string{hostname},
 		Auth: clickhouse.Auth{
 			Database: database,
@@ -44,34 +40,21 @@ func main() {
 			Method: clickhouse.CompressionLZ4,
 		},
 		Debug: true,
-	}, &cxsql.RuntimeOptions{})
+	})
 	if err != nil {
 		log.Panicln(err)
 	}
-	if err := tables.CreateTableSQL(ctx, conn); err != nil {
+	if err := tables.CreateTableNative(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
 	client := clickhousebuffer.NewClientWithOptions(ctx, ch,
 		clickhousebuffer.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(5),
 	)
-	rxbuffer, err := cxredis.NewBuffer(ctx, redis.NewClient(&redis.Options{
-		Addr:     redisHost,
-		Password: redisPass,
-	}), "bucket", client.Options().BatchSize())
-	if err != nil {
-		log.Panicln(err)
-	}
-	writeAPI := client.Writer(cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()), rxbuffer)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		errorsCh := writeAPI.Errors()
-		for err := range errorsCh {
-			log.Printf("clickhouse write error: %s\n", err.Error())
-		}
-		wg.Done()
-	}()
+	writeAPI := client.Writer(
+		cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
+		cxmem.NewBuffer(client.Options().BatchSize()),
+	)
 
 	int32s := []int32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	for _, val := range int32s {
@@ -82,5 +65,4 @@ func main() {
 
 	<-time.After(time.Second * 2)
 	client.Close()
-	wg.Wait()
 }

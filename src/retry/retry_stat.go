@@ -1,4 +1,4 @@
-package clickhousebuffer
+package retry
 
 import "sync/atomic"
 
