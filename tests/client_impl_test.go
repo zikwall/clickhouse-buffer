@@ -193,6 +193,7 @@ func TestClient(t *testing.T) {
 		}
 	})
 
+	// nolint:dupl // it's OK
 	t.Run("it should be successfully handle retry", func(t *testing.T) {
 		mock := &ClickhouseImplRetryMock{}
 		client := clickhousebuffer.NewClientWithOptions(ctx, mock,
@@ -219,6 +220,54 @@ func TestClient(t *testing.T) {
 			}
 		}()
 		writeAPI.WriteRow(RowMock{
+			id: 1, uuid: "1", insertTS: time.Now(),
+		})
+		simulateWait(time.Millisecond * 10)
+		atomic.StoreInt32(&mock.hasErr, 1)
+		simulateWait(time.Millisecond * 2000)
+		mu.RLock()
+		defer mu.RUnlock()
+		if len(errors) != 1 {
+			t.Fatalf("failed, expected to get one error, received %d", len(errors))
+		}
+		if memoryBuffer.Len() != 0 {
+			t.Fatal("failed, the buffer was expected to be cleared")
+		}
+		ok, nook, progress := client.RetryClient().Metrics()
+		fmt.Println("#3:", ok, nook, progress)
+		if ok != 1 || nook != 0 || progress != 0 {
+			t.Fatalf("failed, expect one successful and zero fail retries, expect %d and failed %d", ok, nook)
+		}
+		simulateWait(time.Millisecond * 350)
+	})
+
+	// nolint:dupl // it's OK
+	t.Run("[safe] it should be successfully handle retry", func(t *testing.T) {
+		mock := &ClickhouseImplRetryMock{}
+		client := clickhousebuffer.NewClientWithOptions(ctx, mock,
+			clickhousebuffer.DefaultOptions().
+				SetFlushInterval(10).
+				SetBatchSize(1).
+				SetDebugMode(true).
+				SetRetryIsEnabled(true),
+		)
+		defer client.Close()
+		memoryBuffer := cxsyncmem.NewBuffer(
+			client.Options().BatchSize(),
+		)
+		writeAPI := client.Writer(tableView, memoryBuffer)
+		var errors []error
+		mu := &sync.RWMutex{}
+		errorsCh := writeAPI.Errors()
+		// Create go proc for reading and storing errors
+		go func() {
+			for err := range errorsCh {
+				mu.Lock()
+				errors = append(errors, err)
+				mu.Unlock()
+			}
+		}()
+		writeAPI.TryWriteRow(RowMock{
 			id: 1, uuid: "1", insertTS: time.Now(),
 		})
 		simulateWait(time.Millisecond * 10)
@@ -314,7 +363,7 @@ func TestClient(t *testing.T) {
 		if memoryBuffer.Len() != 0 {
 			t.Fatal("failed, the buffer was expected to be cleared")
 		}
-		simulateWait(time.Millisecond * 5000)
+		simulateWait(time.Millisecond * 2000)
 		ok, nook, progress := client.RetryClient().Metrics()
 		fmt.Println("#4:", ok, nook, progress)
 		if ok != 0 || nook != 0 || progress != 0 {

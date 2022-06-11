@@ -15,6 +15,8 @@ import (
 type Writer interface {
 	// WriteRow writes asynchronously line protocol record into bucket.
 	WriteRow(vector cx.Vectorable)
+	// TryWriteRow same as WriteRow, but with Channel Closing Principle (Gracefully Close Channels)
+	TryWriteRow(vec cx.Vectorable)
 	// Errors returns a channel for reading errors which occurs during async writes.
 	Errors() <-chan error
 	// Close writer
@@ -61,10 +63,29 @@ func NewWriter(ctx context.Context, client Client, view cx.View, engine cx.Buffe
 
 // WriteRow writes asynchronously line protocol record into bucket.
 // WriteRow adds record into the buffer which is sent on the background when it reaches the batch size.
-func (w *writer) WriteRow(rower cx.Vectorable) {
+func (w *writer) WriteRow(vec cx.Vectorable) {
 	// maybe use atomic for check is closed
 	// atomic.LoadInt32(&w.isClosed) == 1
-	w.bufferCh <- rower.Row()
+	w.bufferCh <- vec.Row()
+}
+
+// TryWriteRow same as WriteRow, but with Channel Closing Principle (Gracefully Close Channels)
+func (w *writer) TryWriteRow(vec cx.Vectorable) {
+	// the try-receive operation is to try to exit the goroutine as early as
+	// possible. For this specified example, it is not essential.
+	select {
+	case <-w.bufferStop:
+		return
+	default:
+	}
+	// even if bufferStop is closed, the first branch in the second select may be
+	// still not selected for some loops if to send to bufferCh is also unblocked.
+	// But this is acceptable for this example, so the first select block above can be omitted.
+	select {
+	case <-w.bufferStop:
+		return
+	case w.bufferCh <- vec.Row():
+	}
 }
 
 // Errors returns a channel for reading errors which occurs during async writes.

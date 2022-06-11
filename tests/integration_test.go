@@ -92,7 +92,7 @@ func TestNative(t *testing.T) {
 		t.Fatal(err)
 	}
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
-	<-time.After(600 * time.Millisecond)
+	<-time.After(1000 * time.Millisecond)
 	mu.RLock()
 	defer mu.RUnlock()
 	if len(errorsSlice) != 1 {
@@ -155,7 +155,7 @@ func TestSQL(t *testing.T) {
 		t.Fatal(err)
 	}
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
-	<-time.After(600 * time.Millisecond)
+	<-time.After(1000 * time.Millisecond)
 	mu.RLock()
 	defer mu.RUnlock()
 	if len(errorsSlice) != 1 {
@@ -392,6 +392,26 @@ func writeDataToBuffer(writeAPI clickhousebuffer.Writer) {
 		id: 4, uuid: "4", insertTS: time.Now(),
 	})
 	writeAPI.WriteRow(integrationRow{
+		id: 5, uuid: "5", insertTS: time.Now(),
+	})
+	// wait a bit
+	<-time.After(50 * time.Millisecond)
+}
+
+func writeDataToBufferSafe(writeAPI clickhousebuffer.Writer) {
+	writeAPI.TryWriteRow(integrationRow{
+		id: 1, uuid: "1", insertTS: time.Now(),
+	})
+	writeAPI.TryWriteRow(integrationRow{
+		id: 2, uuid: "2", insertTS: time.Now(),
+	})
+	writeAPI.TryWriteRow(integrationRow{
+		id: 3, uuid: "3", insertTS: time.Now(),
+	})
+	writeAPI.TryWriteRow(integrationRow{
+		id: 4, uuid: "4", insertTS: time.Now(),
+	})
+	writeAPI.TryWriteRow(integrationRow{
 		id: 5, uuid: "5", insertTS: time.Now(),
 	})
 	// wait a bit
