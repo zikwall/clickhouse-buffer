@@ -125,12 +125,16 @@ type MyCustomDataView struct {
 	uuid     string
 	insertTS time.Time
 }
-// and implement cxbuffer.Vectorable interface
+// and implement cx.Vectorable interface
 func (t *MyCustomDataView) Row() cx.Vector {
 	return cx.Vector{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
 }
 // async write your data
 writeAPI.WriteRow(&MyCustomDataView{
+    id: 1, uuid: "1", insertTS: time.Now(),
+})
+// or use a safe way (same as WriteRow, but safer)
+writeAPI.TryWriteRow(&MyCustomDataView{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 ```
