@@ -174,6 +174,19 @@ err := writerBlocking.WriteRow(ctx, []&MyCustomDataView{
 
 ### More
 
+#### Buffer engine:
+
+You can implement own data-buffer interface: `File`, `Rabbitmq`, `CustomMemory`, etc.
+
+```go
+type Buffer interface {
+	Write(vec Vector)
+	Read() []Vector
+	Len() int
+	Flush()
+}
+```
+
 #### Retries:
 
 > By default, packet resending is disabled, to enable it, you need to call `(*Options).SetRetryIsEnabled(true)`.
