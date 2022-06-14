@@ -17,7 +17,7 @@ SELECT
     id,
     uuid,
     insert_ts
-FROM example
+FROM default.example
 ORDER BY id ASC
 
 Query id: 074f42ff-0ea7-44ca-9cd1-735e8fb5ce54
@@ -36,4 +36,11 @@ Query id: 074f42ff-0ea7-44ca-9cd1-735e8fb5ce54
 └────┴──────────┴─────────────────────┘
 
 10 rows in set. Elapsed: 0.015 sec.
+```
+
+- `$ go run ./cmd/advanced/main.go`
+- `$ go run ./cmd/advanced_redis/main.go`
+
+```sql
+SELECT * FROM default.advanced_example;
 ```
