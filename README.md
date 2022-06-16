@@ -137,6 +137,14 @@ writeAPI.WriteRow(&MyCustomDataView{
 writeAPI.TryWriteRow(&MyCustomDataView{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
+// or faster
+writeAPI.WriteVector(cx.Vector{
+    1, "1", time.Now(),
+})
+// safe way
+writeAPI.TryWriteVector(cx.Vector{
+    1, "1", time.Now(),
+})
 ```
 
 When using a non-blocking record, you can track errors through a special error channel
@@ -240,6 +248,20 @@ export REDIS_HOST=111.11.11.11:6379
 export REDIS_PASS=password_if_needed
 
 $ go test -v ./... -tags=integration
+```
+
+**Benchmarks**
+
+```shell
+// memory
+
+$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateVectors -benchmem -benchtime=50x
+$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateObjects -benchmem -benchtime=50x
+$ go test ./bench -bench=BenchmarkInsertSimplestObjects -benchmem -benchtime=50x
+$ go test ./bench -bench=BenchmarkInsertSimplestVectors -benchmem -benchtime=50x
+
+// redis
+// todo
 ```
 
 ### TODO:

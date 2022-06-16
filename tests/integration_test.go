@@ -284,6 +284,7 @@ func useRedisPool() (*redis.Client, error) {
 		Addr:     host,
 		Username: user,
 		Password: pass,
+		DB:       12,
 	})
 	if err := db.Ping(db.Context()).Err(); err != nil {
 		return nil, err

@@ -17,6 +17,10 @@ type Writer interface {
 	WriteRow(vector cx.Vectorable)
 	// TryWriteRow same as WriteRow, but with Channel Closing Principle (Gracefully Close Channels)
 	TryWriteRow(vec cx.Vectorable)
+	// WriteVector writes asynchronously line protocol record into bucket.
+	WriteVector(vec cx.Vector)
+	// TryWriteVector same as WriteVector
+	TryWriteVector(vec cx.Vector)
 	// Errors returns a channel for reading errors which occurs during async writes.
 	Errors() <-chan error
 	// Close writer
@@ -72,7 +76,7 @@ func (w *writer) WriteRow(vec cx.Vectorable) {
 // TryWriteRow same as WriteRow, but with Channel Closing Principle (Gracefully Close Channels)
 func (w *writer) TryWriteRow(vec cx.Vectorable) {
 	// the try-receive operation is to try to exit the goroutine as early as
-	// possible. For this specified example, it is not essential.
+	// possible.
 	select {
 	case <-w.bufferStop:
 		return
@@ -80,11 +84,29 @@ func (w *writer) TryWriteRow(vec cx.Vectorable) {
 	}
 	// even if bufferStop is closed, the first branch in the second select may be
 	// still not selected for some loops if to send to bufferCh is also unblocked.
-	// But this is acceptable for this example, so the first select block above can be omitted.
 	select {
 	case <-w.bufferStop:
 		return
 	case w.bufferCh <- vec.Row():
+	}
+}
+
+// WriteVector same as WriteRow, but just uses inlined vector.
+func (w *writer) WriteVector(vec cx.Vector) {
+	w.bufferCh <- vec
+}
+
+// TryWriteVector same as WriteVector
+func (w *writer) TryWriteVector(vec cx.Vector) {
+	select {
+	case <-w.bufferStop:
+		return
+	default:
+	}
+	select {
+	case <-w.bufferStop:
+		return
+	case w.bufferCh <- vec:
 	}
 }
 
@@ -168,9 +190,13 @@ func (w *writer) runBufferBridge() {
 		w.bufferCh = nil
 		// send signal, buffer listener is done
 		w.doneCh <- struct{}{}
-		w.writeOptions.logger.Logf("stop buffer bridge: %s", w.view.Name)
+		if w.writeOptions.isDebug {
+			w.writeOptions.logger.Logf("stop buffer bridge: %s", w.view.Name)
+		}
 	}()
-	w.writeOptions.logger.Logf("run buffer bridge: %s", w.view.Name)
+	if w.writeOptions.isDebug {
+		w.writeOptions.logger.Logf("run buffer bridge: %s", w.view.Name)
+	}
 	for {
 		select {
 		case vector := <-w.bufferCh:
@@ -190,7 +216,9 @@ func (w *writer) runBufferBridge() {
 
 // asynchronously write to Clickhouse database in large batches
 func (w *writer) runClickhouseBridge() {
-	w.writeOptions.logger.Logf("run clickhouse bridge: %s", w.view.Name)
+	if w.writeOptions.isDebug {
+		w.writeOptions.logger.Logf("run clickhouse bridge: %s", w.view.Name)
+	}
 	defer func() {
 		// close clickhouse channel
 		close(w.clickhouseCh)
@@ -204,7 +232,9 @@ func (w *writer) runClickhouseBridge() {
 		w.mu.Unlock()
 		// send signal, clickhouse listener is done
 		w.doneCh <- struct{}{}
-		w.writeOptions.logger.Logf("stop clickhouse bridge: %s", w.view.Name)
+		if w.writeOptions.isDebug {
+			w.writeOptions.logger.Logf("stop clickhouse bridge: %s", w.view.Name)
+		}
 	}()
 	for {
 		select {
