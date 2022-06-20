@@ -20,6 +20,7 @@ type redisBuffer struct {
 	context    context.Context
 	bucket     string
 	bufferSize int64
+	size       int64
 }
 
 func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize uint) (cx.Buffer, error) {
@@ -28,6 +29,7 @@ func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize
 		context:    ctx,
 		bucket:     key(bucket),
 		bufferSize: int64(bufferSize),
+		size:       rdb.LLen(ctx, bucket).Val(),
 	}, nil
 }
 
