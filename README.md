@@ -253,16 +253,70 @@ $ go test -v ./... -tags=integration
 **Benchmarks**
 
 ```shell
+goos: linux
+goarch: amd64
+pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
+```
+
+```shell
 // memory
 
-$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateVectors -benchmem -benchtime=50x
-$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateObjects -benchmem -benchtime=50x
-$ go test ./bench -bench=BenchmarkInsertSimplestObjects -benchmem -benchtime=50x
-$ go test ./bench -bench=BenchmarkInsertSimplestVectors -benchmem -benchtime=50x
+$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateVectors -benchmem -benchtime=1000x
+
+// BenchmarkInsertSimplestPreallocateVectors/1000000-12                1000            142919 ns/op               0 B/op         0 allocs/op
+// BenchmarkInsertSimplestPreallocateVectors/100000-12                 1000             12498 ns/op               0 B/op         0 allocs/op
+// BenchmarkInsertSimplestPreallocateVectors/10000-12                  1000              1265 ns/op               0 B/op         0 allocs/op
+// BenchmarkInsertSimplestPreallocateVectors/1000-12                   1000               143.1 ns/op             0 B/op         0 allocs/op
+// BenchmarkInsertSimplestPreallocateVectors/100-12                    1000                 5.700 ns/op           2 B/op         0 allocs/op
+
+$ go test ./bench -bench=BenchmarkInsertSimplestPreallocateObjects -benchmem -benchtime=1000x
+
+// BenchmarkInsertSimplestPreallocateObjects/1000000-12                1000            399110 ns/op           88000 B/op      3000 allocs/op
+// BenchmarkInsertSimplestPreallocateObjects/100000-12                 1000             37527 ns/op            8800 B/op       300 allocs/op
+// BenchmarkInsertSimplestPreallocateObjects/10000-12                  1000              3880 ns/op             880 B/op        30 allocs/op
+// BenchmarkInsertSimplestPreallocateObjects/1000-12                   1000               419.5 ns/op            88 B/op         3 allocs/op
+// BenchmarkInsertSimplestPreallocateObjects/100-12                    1000                58.90 ns/op           11 B/op         0 allocs/op
+
+$ go test ./bench -bench=BenchmarkInsertSimplestObjects -benchmem -benchtime=1000x
+
+// BenchmarkInsertSimplestObjects/1000000-12                   1000            454794 ns/op          160002 B/op       4000 allocs/op
+// BenchmarkInsertSimplestObjects/100000-12                    1000             41879 ns/op           16000 B/op        400 allocs/op
+// BenchmarkInsertSimplestObjects/10000-12                     1000              4174 ns/op            1605 B/op         40 allocs/op
+// BenchmarkInsertSimplestObjects/1000-12                      1000               479.5 ns/op           160 B/op          4 allocs/op
+// BenchmarkInsertSimplestObjects/100-12                       1000                39.40 ns/op           16 B/op          0 allocs/op
+
+$ go test ./bench -bench=BenchmarkInsertSimplestVectors -benchmem -benchtime=1000x
+
+// BenchmarkInsertSimplestVectors/1000000-12                   1000            182548 ns/op           72002 B/op       1000 allocs/op
+// BenchmarkInsertSimplestVectors/100000-12                    1000             16291 ns/op            7200 B/op        100 allocs/op
+// BenchmarkInsertSimplestVectors/10000-12                     1000              1638 ns/op             725 B/op         10 allocs/op
+// BenchmarkInsertSimplestVectors/1000-12                      1000               208.4 ns/op            72 B/op          1 allocs/op
+// BenchmarkInsertSimplestVectors/100-12                       1000                20.00 ns/op            7 B/op          0 allocs/op
 
 // redis
-// todo
+
+$ go test ./bench -bench=BenchmarkInsertRedisObjects -benchmem -benchtime=100x
+
+// BenchmarkInsertRedisObjects/1000-12                      100          22404356 ns/op           96095 B/op       2322 allocs/op
+// BenchmarkInsertRedisObjects/100-12                       100           2243544 ns/op            9673 B/op        233 allocs/op
+// BenchmarkInsertRedisObjects/10-12                        100            271749 ns/op            1033 B/op         25 allocs/op
+
+$ go test ./bench -bench=BenchmarkInsertRedisVectors -benchmem -benchtime=100x
+
+// BenchmarkInsertRedisVectors/1000-12                  100          22145258 ns/op           92766 B/op       2274 allocs/op
+// BenchmarkInsertRedisVectors/100-12                   100           2320692 ns/op            9339 B/op        229 allocs/op
+// BenchmarkInsertRedisVectors/10-12                    100            202146 ns/op             157 B/op          2 allocs/op
 ```
+
+**Conclusion:**
+
+- buffer on redis is expected to work slower than the buffer in memory, this is due to fact that it is necessary to serialize data and deserialize it back, which causes a lot of overhead, also do not forget about network overhead
+- writing through a vector causes less overhead (allocations) and works faster
+- pre-allocated vector recording works very fast with zero memory allocation, this is fact that writing to buffer and then writing it to Clickhouse creates almost no overhead
+- the same can be said about recording objects, but there is a small overhead
+- writing vectors is faster, allocates less memory, and is preferable to writing objects
+- using a buffer in-memory is preferable to a buffer in redis
 
 ### TODO:
 
