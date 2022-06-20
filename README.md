@@ -294,6 +294,14 @@ $ go test ./bench -bench=BenchmarkInsertSimplestVectors -benchmem -benchtime=100
 // BenchmarkInsertSimplestVectors/1000-12                      1000               208.4 ns/op            72 B/op          1 allocs/op
 // BenchmarkInsertSimplestVectors/100-12                       1000                20.00 ns/op            7 B/op          0 allocs/op
 
+$ go test ./bench -bench=BenchmarkInsertSimplestEmptyVectors -benchmem -benchtime=1000x
+
+// BenchmarkInsertSimplestEmptyVectors/1000000-12              1000            132887 ns/op           24002 B/op          0 allocs/op
+// BenchmarkInsertSimplestEmptyVectors/100000-12               1000             13404 ns/op            2400 B/op          0 allocs/op
+// BenchmarkInsertSimplestEmptyVectors/10000-12                1000              1299 ns/op             245 B/op          0 allocs/op
+// BenchmarkInsertSimplestEmptyVectors/1000-12                 1000               122.1 ns/op             0 B/op          0 allocs/op
+// BenchmarkInsertSimplestEmptyVectors/100-12                  1000                 6.800 ns/op           0 B/op          0 allocs/op
+
 // redis
 
 $ go test ./bench -bench=BenchmarkInsertRedisObjects -benchmem -benchtime=100x
