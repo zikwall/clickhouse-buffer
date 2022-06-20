@@ -54,7 +54,7 @@ func NewWriter(ctx context.Context, client Client, view cx.View, engine cx.Buffe
 		writeOptions: client.Options(),
 		// write buffers
 		clickhouseCh: make(chan *cx.Batch),
-		bufferCh:     make(chan cx.Vector, 100),
+		bufferCh:     make(chan cx.Vector),
 		// signals
 		doneCh:     make(chan struct{}),
 		bufferStop: make(chan struct{}),
