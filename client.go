@@ -8,6 +8,10 @@ import (
 	"github.com/zikwall/clickhouse-buffer/v3/src/retry"
 )
 
+// Client main interface, provides a top-level API.
+// Client generates child Writer-s and stores all necessary configuration in itself.
+// Client owns an instance of a Clickhouse database connection.
+// Client provides a retry.Retryable interface for re-processing packets.
 type Client interface {
 	// Options returns the options associated with client
 	Options() *Options
@@ -26,6 +30,7 @@ type Client interface {
 	Close()
 }
 
+// Implementation of the Client interface
 type clientImpl struct {
 	context       context.Context
 	clickhouse    cx.Clickhouse
@@ -37,10 +42,14 @@ type clientImpl struct {
 	logger        cx.Logger
 }
 
+// NewClient creates an object implementing the Client interface with default options
 func NewClient(ctx context.Context, clickhouse cx.Clickhouse) Client {
 	return NewClientWithOptions(ctx, clickhouse, DefaultOptions())
 }
 
+// NewClientWithOptions similar to NewClient except that there is a configuration option
+// with an encapsulated setting inside.
+// NewClientWithOptions returns implementation of the Client interface.
 func NewClientWithOptions(ctx context.Context, clickhouse cx.Clickhouse, options *Options) Client {
 	if options.logger == nil {
 		options.logger = cx.NewDefaultLogger()
@@ -53,7 +62,10 @@ func NewClientWithOptions(ctx context.Context, clickhouse cx.Clickhouse, options
 		syncWriteAPIs: map[string]WriterBlocking{},
 		logger:        options.logger,
 	}
+	// if resending undelivered messages is enabled, safely check all the necessary settings
 	if options.isRetryEnabled {
+		// if no custom engine is specified for queues, we use the default engine,
+		// in most cases, this covers all cases.
 		if options.queue == nil {
 			options.queue = retry.NewImMemoryQueueEngine()
 		}
@@ -64,10 +76,13 @@ func NewClientWithOptions(ctx context.Context, clickhouse cx.Clickhouse, options
 	return client
 }
 
+// Options return global options object
 func (c *clientImpl) Options() *Options {
 	return c.options
 }
 
+// Writer returns the asynchronous, non-blocking, Writer client.
+// Ensures using a single Writer instance for each table pair.
 func (c *clientImpl) Writer(view cx.View, buf cx.Buffer) Writer {
 	key := view.Name
 	c.mu.Lock()
@@ -79,6 +94,8 @@ func (c *clientImpl) Writer(view cx.View, buf cx.Buffer) Writer {
 	return writer
 }
 
+// WriterBlocking returns the synchronous, blocking, WriterBlocking client.
+// Ensures using a single WriterBlocking instance for each table pair.
 func (c *clientImpl) WriterBlocking(view cx.View) WriterBlocking {
 	key := view.Name
 	c.mu.Lock()
@@ -90,6 +107,7 @@ func (c *clientImpl) WriterBlocking(view cx.View) WriterBlocking {
 	return writer
 }
 
+// Close API top-level method safely closes all child asynchronous and synchronous Writer-s
 func (c *clientImpl) Close() {
 	if c.options.isDebug {
 		c.logger.Log("close clickhouse buffer client")
@@ -113,6 +131,8 @@ func (c *clientImpl) Close() {
 	c.mu.Unlock()
 }
 
+// WriteBatch API top-level method for writing to Clickhouse database.
+// All child Writer-s use this method to write their accumulated and encapsulated data.
 func (c *clientImpl) WriteBatch(ctx context.Context, view cx.View, batch *cx.Batch) error {
 	_, err := c.clickhouse.Insert(ctx, view, batch.Rows())
 	if err != nil {
@@ -126,6 +146,7 @@ func (c *clientImpl) WriteBatch(ctx context.Context, view cx.View, batch *cx.Bat
 	return nil
 }
 
+// RetryClient returns implementation of the retry.Retryable interface
 func (c *clientImpl) RetryClient() retry.Retryable {
 	return c.retry
 }
