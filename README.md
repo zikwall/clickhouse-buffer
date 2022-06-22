@@ -237,8 +237,9 @@ clickhousebuffer.DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
 
 #### Tests:
 
-- `$ go test -v ./...`
-- `$ golangci-lint run --config ./.golangci.yml`
+- `$ go test -v ./...` - run all tests without integration part
+- `$ go test -race -v ./...` - run all tests without integration part and in race detection mode
+- `$ golangci-lint run --config ./.golangci.yml` - check code quality with linters
 
 **Integration Tests:**
 
@@ -248,6 +249,10 @@ export REDIS_HOST=111.11.11.11:6379
 export REDIS_PASS=password_if_needed
 
 $ go test -v ./... -tags=integration
+
+or with race detec mode
+
+$ go test -race -v ./... -tags=integration
 ```
 
 **Benchmarks**
@@ -328,9 +333,12 @@ $ go test ./bench -bench=BenchmarkInsertRedisVectors -benchmem -benchtime=100x
 
 ### TODO:
 
+- [ ] rewrite Buffer interface, simplify it
+- [ ] rewrite Options, simplify it
+- [ ] optimization redis buffer and encode/decode functions
 - [ ] buffer interfaces
 - [ ] more retry buffer interfaces
-- [ ] rewrite retry lib
+- [ ] rewrite retry lib, simplify it
 - [ ] create binary app for streaming data to clickhouse
   - [ ] client and server with HTTP interface
   - [ ] client and server with gRPC interface
