@@ -27,6 +27,8 @@ type Writer interface {
 	Close()
 }
 
+// writer structure implements the Writer interface,
+// encapsulates all the necessary methods within itself and manages its own personal data flows
 type writer struct {
 	context      context.Context
 	view         cx.View
@@ -92,6 +94,7 @@ func (w *writer) TryWriteRow(vec cx.Vectorable) {
 }
 
 // WriteVector same as WriteRow, but just uses inlined vector.
+// WriteVector a faster option for writing to buffer than WriteRow, in addition, memory allocates less
 func (w *writer) WriteVector(vec cx.Vector) {
 	w.bufferCh <- vec
 }
@@ -111,24 +114,25 @@ func (w *writer) TryWriteVector(vec cx.Vector) {
 }
 
 // Errors returns a channel for reading errors which occurs during async writes.
-// Must be called before performing any writes for errors to be collected.
-// The chan is unbuffered and must be drained or the writer will block.
+// Errors must be called before performing any writes for errors to be collected.
+// Errors chan is unbuffered and must be drained or the writer will block.
 func (w *writer) Errors() <-chan error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.errCh == nil {
+		// mark that have a channel reader with errors so that can write to same channel
 		atomic.StoreInt32(&w.isOpenErr, 1)
 		w.errCh = make(chan error)
 	}
 	return w.errCh
 }
 
+// hasErrReader returns true if there is at least one channel reader with errors, otherwise false
 func (w *writer) hasErrReader() bool {
 	return atomic.LoadInt32(&w.isOpenErr) > 0
 }
 
-// Close finishes outstanding write operations,
-// stop background routines and closes all channels
+// Close finishes outstanding write operations, stop background routines and closes all channels
 func (w *writer) Close() {
 	if w.clickhouseCh != nil {
 		// stop and wait for write buffer
@@ -148,6 +152,7 @@ func (w *writer) Close() {
 	}
 }
 
+// flush generates a new message packet and sends it to the queue channel for subsequent recording to Clickhouse database
 func (w *writer) flush() {
 	if w.writeOptions.isDebug {
 		w.writeOptions.logger.Logf("flush buffer: %s", w.view.Name)
@@ -174,9 +179,9 @@ func (w *writer) flush() {
 //			return
 //		}
 //	}
-//}
+// }
 
-// writing to a temporary buffer to collect more data
+// runBufferBridge writing to a temporary buffer to collect more data
 func (w *writer) runBufferBridge() {
 	ticker := time.NewTicker(time.Duration(w.writeOptions.FlushInterval()) * time.Millisecond)
 	defer func() {
@@ -214,7 +219,7 @@ func (w *writer) runBufferBridge() {
 	}
 }
 
-// asynchronously write to Clickhouse database in large batches
+// runClickhouseBridge asynchronously write to Clickhouse database in large batches
 func (w *writer) runClickhouseBridge() {
 	if w.writeOptions.isDebug {
 		w.writeOptions.logger.Logf("run clickhouse bridge: %s", w.view.Name)

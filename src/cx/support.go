@@ -13,18 +13,22 @@ const (
 	defaultInsertDurationTimeout = time.Millisecond * 15000
 )
 
+// GetDefaultMaxIdleConns to get away from this decision in the near future
 func GetDefaultMaxIdleConns() int {
 	return defaultMaxIdleConns
 }
 
+// GetDefaultMaxOpenConns to get away from this decision in the near future
 func GetDefaultMaxOpenConns() int {
 	return defaultMaxOpenConns
 }
 
+// GetDefaultConnMaxLifetime to get away from this decision in the near future
 func GetDefaultConnMaxLifetime() time.Duration {
 	return defaultConnMaxLifetime
 }
 
+// GetDefaultInsertDurationTimeout to get away from this decision in the near future
 func GetDefaultInsertDurationTimeout() time.Duration {
 	return defaultInsertDurationTimeout
 }
@@ -55,6 +59,8 @@ var noRetryErrors = map[int32]struct{}{
 	373: {}, // SESSION_IS_LOCKED
 }
 
+// IsResendAvailable checks whether it is possible to resend undelivered messages to the Clickhouse database
+// based on the error received from Clickhouse
 func IsResendAvailable(err error) bool {
 	var (
 		exception *clickhouse.Exception

@@ -20,11 +20,11 @@ type Vectorable interface {
 	Row() Vector
 }
 
+// Vector basic structure for writing to is nothing more than a slice of undefined interfaces
 type Vector []interface{}
-type VectorDecoded string
 
 // Encode turns the Vector type into an array of bytes.
-// This method is used for data serialization and storage in remote buffers, such as redis.Buffer
+// Encode is used for data serialization and storage in remote buffers, such as redis.Buffer
 func (v Vector) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 	err := gob.NewEncoder(&buf).Encode(v)
@@ -34,7 +34,10 @@ func (v Vector) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode This method is required to reverse deserialize an array of bytes in a Vector type
+// VectorDecoded a type that is a string, but contains a binary data format
+type VectorDecoded string
+
+// Decode method is required to reverse deserialize an array of bytes in a Vector type
 func (d VectorDecoded) Decode() (Vector, error) {
 	var v Vector
 	err := gob.NewDecoder(bytes.NewReader([]byte(d))).Decode(&v)

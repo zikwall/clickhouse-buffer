@@ -9,7 +9,8 @@ import (
 type Options struct {
 	// Maximum number of rows sent to server in single request. Default 5000
 	batchSize uint
-	// Interval, in ms, in which is buffer flushed if it has not been already written (by reaching batch size) . Default 1000ms
+	// Interval, in ms, in which is buffer flushed if it has not been already written (by reaching batch size).
+	// Default 1000ms
 	flushInterval uint
 	// Debug mode
 	isDebug bool
@@ -43,21 +44,25 @@ func (o *Options) SetFlushInterval(flushIntervalMs uint) *Options {
 	return o
 }
 
+// SetDebugMode set debug mode, for logs and errors
 func (o *Options) SetDebugMode(isDebug bool) *Options {
 	o.isDebug = isDebug
 	return o
 }
 
+// SetRetryIsEnabled enable/disable resending undelivered messages
 func (o *Options) SetRetryIsEnabled(enabled bool) *Options {
 	o.isRetryEnabled = enabled
 	return o
 }
 
+// SetLogger installs a custom implementation of the cx.Logger interface
 func (o *Options) SetLogger(logger cx.Logger) *Options {
 	o.logger = logger
 	return o
 }
 
+// SetQueueEngine installs a custom implementation of the retry.Queueable interface
 func (o *Options) SetQueueEngine(queue retry.Queueable) *Options {
 	o.queue = queue
 	return o
