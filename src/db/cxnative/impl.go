@@ -51,15 +51,6 @@ func (c *clickhouseNative) Close() error {
 }
 
 func NewClickhouse(ctx context.Context, options *clickhouse.Options) (cx.Clickhouse, driver.Conn, error) {
-	if options.MaxIdleConns == 0 {
-		options.MaxIdleConns = cx.GetDefaultMaxIdleConns()
-	}
-	if options.MaxOpenConns == 0 {
-		options.MaxOpenConns = cx.GetDefaultMaxOpenConns()
-	}
-	if options.ConnMaxLifetime == 0 {
-		options.ConnMaxLifetime = cx.GetDefaultConnMaxLifetime()
-	}
 	conn, err := clickhouse.Open(options)
 	if err != nil {
 		return nil, nil, err
