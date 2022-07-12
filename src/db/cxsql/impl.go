@@ -85,19 +85,16 @@ func NewClickhouse(
 	*sql.DB,
 	error,
 ) {
+	conn := clickhouse.OpenDB(options)
 	if runtimeOpts.MaxIdleConns == 0 {
-		runtimeOpts.MaxIdleConns = cx.GetDefaultMaxIdleConns()
+		conn.SetMaxIdleConns(runtimeOpts.MaxIdleConns)
 	}
 	if runtimeOpts.MaxOpenConns == 0 {
-		runtimeOpts.MaxOpenConns = cx.GetDefaultMaxOpenConns()
+		conn.SetMaxOpenConns(runtimeOpts.MaxOpenConns)
 	}
 	if runtimeOpts.ConnMaxLifetime == 0 {
-		runtimeOpts.ConnMaxLifetime = cx.GetDefaultConnMaxLifetime()
+		conn.SetConnMaxLifetime(runtimeOpts.ConnMaxLifetime)
 	}
-	conn := clickhouse.OpenDB(options)
-	conn.SetMaxIdleConns(runtimeOpts.MaxIdleConns)
-	conn.SetMaxOpenConns(runtimeOpts.MaxOpenConns)
-	conn.SetConnMaxLifetime(runtimeOpts.ConnMaxLifetime)
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"max_block_size": 10,
 	}), clickhouse.WithProgress(func(p *clickhouse.Progress) {

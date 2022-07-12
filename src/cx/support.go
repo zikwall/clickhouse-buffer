@@ -6,27 +6,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
-const (
-	defaultMaxIdleConns          = 20
-	defaultMaxOpenConns          = 21
-	defaultConnMaxLifetime       = time.Minute * 15
-	defaultInsertDurationTimeout = time.Millisecond * 15000
-)
-
-// GetDefaultMaxIdleConns to get away from this decision in the near future
-func GetDefaultMaxIdleConns() int {
-	return defaultMaxIdleConns
-}
-
-// GetDefaultMaxOpenConns to get away from this decision in the near future
-func GetDefaultMaxOpenConns() int {
-	return defaultMaxOpenConns
-}
-
-// GetDefaultConnMaxLifetime to get away from this decision in the near future
-func GetDefaultConnMaxLifetime() time.Duration {
-	return defaultConnMaxLifetime
-}
+const defaultInsertDurationTimeout = time.Millisecond * 15000
 
 // GetDefaultInsertDurationTimeout to get away from this decision in the near future
 func GetDefaultInsertDurationTimeout() time.Duration {
