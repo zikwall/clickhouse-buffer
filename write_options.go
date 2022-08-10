@@ -1,8 +1,8 @@
 package clickhousebuffer
 
 import (
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
-	"github.com/zikwall/clickhouse-buffer/v3/src/retry"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/retry"
 )
 
 // Options holds write configuration properties

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 type row struct {
@@ -19,7 +19,7 @@ func (r *row) Row() cx.Vector {
 
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkEncodeRow/1000000-12                100          30361854 ns/op        15847294 B/op     240014 allocs/op
 // BenchmarkEncodeRow/100000-12                 100           2946954 ns/op         1584748 B/op      24001 allocs/op
@@ -65,7 +65,7 @@ func BenchmarkEncodeRow(b *testing.B) {
 
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkDecodeRow/100000-12                 100          17739535 ns/op         7653390 B/op     200064 allocs/op
 // BenchmarkDecodeRow/10000-12                  100           1867818 ns/op          765345 B/op      20006 allocs/op

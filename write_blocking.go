@@ -3,7 +3,7 @@ package clickhousebuffer
 import (
 	"context"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 // WriterBlocking similar to Writer except that this interface must implement a blocking entry.

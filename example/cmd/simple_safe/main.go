@@ -10,11 +10,11 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
-	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+	"github.com/zikwall/clickhouse-buffer/v4/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxmem"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/db/cxnative"
 )
 
 func main() {

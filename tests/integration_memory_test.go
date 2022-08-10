@@ -8,9 +8,9 @@ import (
 	"log"
 	"testing"
 
-	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxsyncmem"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxsyncmem"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 // nolint:dupl // it's OK

@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+	"github.com/zikwall/clickhouse-buffer/v4/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxmem"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 type BenchTable struct {
@@ -39,7 +39,7 @@ func (c *clickhouseMock) Conn() driver.Conn {
 // x50
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestPreallocateVectors/1000000-12                1000            142919 ns/op               0 B/op         0 allocs/op
 // BenchmarkInsertSimplestPreallocateVectors/100000-12                 1000             12498 ns/op               0 B/op         0 allocs/op
@@ -136,7 +136,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 // x1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestPreallocateObjects/1000000-12                1000            399110 ns/op           88000 B/op      3000 allocs/op
 // BenchmarkInsertSimplestPreallocateObjects/100000-12                 1000             37527 ns/op            8800 B/op       300 allocs/op
@@ -233,7 +233,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 // x1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestObjects/1000000-12                   1000            454794 ns/op          160002 B/op       4000 allocs/op
 // BenchmarkInsertSimplestObjects/100000-12                    1000             41879 ns/op           16000 B/op        400 allocs/op
@@ -330,7 +330,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 // X1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestObjectsJust/10000000-12              1000           4705290 ns/op         1360000 B/op      40000 allocs/op
 // BenchmarkInsertSimplestObjectsJust/1000000-12               1000            410051 ns/op          136000 B/op       4000 allocs/op
@@ -428,7 +428,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 // x1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestVectors/1000000-12                   1000            182548 ns/op           72002 B/op       1000 allocs/op
 // BenchmarkInsertSimplestVectors/100000-12                    1000             16291 ns/op            7200 B/op        100 allocs/op
@@ -525,7 +525,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 // X1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestVectorsJust/10000000-12              1000           2059182 ns/op          480000 B/op      10000 allocs/op
 // BenchmarkInsertSimplestVectorsJust/1000000-12               1000            176129 ns/op           48000 B/op       1000 allocs/op
@@ -623,7 +623,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 // X1000
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertSimplestEmptyVectors/1000000-12              1000            132887 ns/op           24002 B/op          0 allocs/op
 // BenchmarkInsertSimplestEmptyVectors/100000-12               1000             13404 ns/op            2400 B/op          0 allocs/op
