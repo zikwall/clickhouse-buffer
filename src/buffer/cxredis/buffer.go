@@ -37,10 +37,10 @@ func (r *redisBuffer) Read() []cx.Vector {
 }
 
 func (r *redisBuffer) Len() int {
-	return int(r.size)
+	return int(atomic.LoadInt64(&r.size))
 }
 
 func (r *redisBuffer) Flush() {
 	r.client.LTrim(r.context, r.bucket, r.bufferSize, -1).Val()
-	atomic.CompareAndSwapInt64(&r.size, r.size, 0)
+	atomic.StoreInt64(&r.size, 0)
 }

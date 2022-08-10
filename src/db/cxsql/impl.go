@@ -70,36 +70,24 @@ func (c *clickhouseSQL) Insert(ctx context.Context, view cx.View, rows []cx.Vect
 	return affected, nil
 }
 
-type RuntimeOptions struct {
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-}
-
 func NewClickhouse(
 	ctx context.Context,
 	options *clickhouse.Options,
-	runtimeOpts *RuntimeOptions,
+	runtime *cx.RuntimeOptions,
 ) (
 	cx.Clickhouse,
 	*sql.DB,
 	error,
 ) {
 	conn := clickhouse.OpenDB(options)
-	if runtimeOpts.MaxIdleConns == 0 {
-		conn.SetMaxIdleConns(runtimeOpts.MaxIdleConns)
-	}
-	if runtimeOpts.MaxOpenConns == 0 {
-		conn.SetMaxOpenConns(runtimeOpts.MaxOpenConns)
-	}
-	if runtimeOpts.ConnMaxLifetime == 0 {
-		conn.SetConnMaxLifetime(runtimeOpts.ConnMaxLifetime)
-	}
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
-		"max_block_size": 10,
-	}), clickhouse.WithProgress(func(p *clickhouse.Progress) {
-		fmt.Println("progress: ", p)
-	}))
+	ctx = clickhouse.Context(ctx,
+		clickhouse.WithSettings(clickhouse.Settings{
+			"max_block_size": 10,
+		}),
+		clickhouse.WithProgress(func(p *clickhouse.Progress) {
+			fmt.Println("progress: ", p)
+		}),
+	)
 	if err := conn.PingContext(ctx); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
 			fmt.Printf("catch exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
@@ -108,13 +96,13 @@ func NewClickhouse(
 	}
 	return &clickhouseSQL{
 		conn:          conn,
-		insertTimeout: cx.GetDefaultInsertDurationTimeout(),
+		insertTimeout: runtime.GetWriteTimeout(),
 	}, conn, nil
 }
 
-func NewClickhouseWithConn(conn *sql.DB) cx.Clickhouse {
+func NewClickhouseWithConn(conn *sql.DB, runtime *cx.RuntimeOptions) cx.Clickhouse {
 	return &clickhouseSQL{
 		conn:          conn,
-		insertTimeout: cx.GetDefaultInsertDurationTimeout(),
+		insertTimeout: runtime.GetWriteTimeout(),
 	}
 }

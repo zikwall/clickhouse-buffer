@@ -49,6 +49,7 @@ func BenchmarkInsertRedisObjects(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)
@@ -69,6 +70,7 @@ func BenchmarkInsertRedisObjects(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)
@@ -89,6 +91,7 @@ func BenchmarkInsertRedisObjects(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)
@@ -140,6 +143,7 @@ func BenchmarkInsertRedisVectors(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)
@@ -161,6 +165,7 @@ func BenchmarkInsertRedisVectors(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)
@@ -182,6 +187,7 @@ func BenchmarkInsertRedisVectors(b *testing.B) {
 			log.Panicln(err)
 		}
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			rxbuffer,
 		)

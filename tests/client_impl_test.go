@@ -120,7 +120,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		writeAPI.WriteRow(RowMock{
 			id: 1, uuid: "1", insertTS: time.Now(),
 		})
@@ -155,7 +155,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		var errors []error
 		mu := &sync.RWMutex{}
 		errorsCh := writeAPI.Errors()
@@ -207,7 +207,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		var errors []error
 		mu := &sync.RWMutex{}
 		errorsCh := writeAPI.Errors()
@@ -255,7 +255,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		var errors []error
 		mu := &sync.RWMutex{}
 		errorsCh := writeAPI.Errors()
@@ -302,7 +302,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		writeAPI.WriteRow(RowMock{
 			id: 1, uuid: "1", insertTS: time.Now(),
 		})
@@ -333,7 +333,7 @@ func TestClient(t *testing.T) {
 		memoryBuffer := cxsyncmem.NewBuffer(
 			client.Options().BatchSize(),
 		)
-		writeAPI := client.Writer(tableView, memoryBuffer)
+		writeAPI := client.Writer(ctx, tableView, memoryBuffer)
 		var errors []error
 		mu := &sync.RWMutex{}
 		errorsCh := writeAPI.Errors()

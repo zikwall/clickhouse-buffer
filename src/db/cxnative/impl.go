@@ -50,16 +50,27 @@ func (c *clickhouseNative) Close() error {
 	return c.conn.Close()
 }
 
-func NewClickhouse(ctx context.Context, options *clickhouse.Options) (cx.Clickhouse, driver.Conn, error) {
+func NewClickhouse(
+	ctx context.Context,
+	options *clickhouse.Options,
+	runtime *cx.RuntimeOptions,
+) (
+	cx.Clickhouse,
+	driver.Conn,
+	error,
+) {
 	conn, err := clickhouse.Open(options)
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
-		"max_block_size": 10,
-	}), clickhouse.WithProgress(func(p *clickhouse.Progress) {
-		fmt.Println("progress: ", p)
-	}))
+	ctx = clickhouse.Context(ctx,
+		clickhouse.WithSettings(clickhouse.Settings{
+			"max_block_size": 10,
+		}),
+		clickhouse.WithProgress(func(p *clickhouse.Progress) {
+			fmt.Println("progress: ", p)
+		}),
+	)
 	if err := conn.Ping(ctx); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
 			fmt.Printf("catch exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
@@ -68,13 +79,13 @@ func NewClickhouse(ctx context.Context, options *clickhouse.Options) (cx.Clickho
 	}
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: cx.GetDefaultInsertDurationTimeout(),
+		insertTimeout: runtime.GetWriteTimeout(),
 	}, conn, nil
 }
 
-func NewClickhouseWithConn(conn driver.Conn) cx.Clickhouse {
+func NewClickhouseWithConn(conn driver.Conn, runtime *cx.RuntimeOptions) cx.Clickhouse {
 	return &clickhouseNative{
 		conn:          conn,
-		insertTimeout: cx.GetDefaultInsertDurationTimeout(),
+		insertTimeout: runtime.GetWriteTimeout(),
 	}
 }

@@ -44,15 +44,17 @@ func main() {
 			Method: clickhouse.CompressionLZ4,
 		},
 		Debug: true,
-	}, &cxsql.RuntimeOptions{})
+	}, &cx.RuntimeOptions{})
 	if err != nil {
 		log.Panicln(err)
 	}
 	if err := tables.CreateTableSQL(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
-	client := clickhousebuffer.NewClientWithOptions(ctx, ch,
-		clickhousebuffer.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(5),
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.DefaultOptions().
+		SetDebugMode(true).
+		SetFlushInterval(1000).
+		SetBatchSize(5),
 	)
 	rxbuffer, err := cxredis.NewBuffer(ctx, redis.NewClient(&redis.Options{
 		Addr:     redisHost,
@@ -61,7 +63,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	writeAPI := client.Writer(cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()), rxbuffer)
+	writeAPI := client.Writer(ctx, cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()), rxbuffer)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

@@ -41,6 +41,8 @@ func main() {
 			Method: clickhouse.CompressionLZ4,
 		},
 		Debug: true,
+	}, &cx.RuntimeOptions{
+		WriteTimeout: 15 * time.Second,
 	})
 	if err != nil {
 		log.Panicln(err)
@@ -49,10 +51,13 @@ func main() {
 		log.Panicln(err)
 	}
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, ch,
-		clickhousebuffer.DefaultOptions().SetDebugMode(true).SetFlushInterval(1000).SetBatchSize(10),
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.DefaultOptions().
+		SetDebugMode(true).
+		SetFlushInterval(1000).
+		SetBatchSize(10),
 	)
 	writeAPI := client.Writer(
+		ctx,
 		cx.NewView(tables.AdvancedTableName(), tables.AdvancedTableColumns()),
 		cxmem.NewBuffer(client.Options().BatchSize()),
 	)

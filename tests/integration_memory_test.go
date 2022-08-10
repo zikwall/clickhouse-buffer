@@ -32,7 +32,7 @@ func TestMemory(t *testing.T) {
 	client, memBuffer := useClientAndMemoryBuffer(ctx, clickhouse)
 	defer client.Close()
 	// STEP 5: Write own data to redis
-	writeAPI := useWriteAPI(client, memBuffer)
+	writeAPI := useWriteAPI(ctx, client, memBuffer)
 	writeDataToBuffer(writeAPI)
 	// STEP 6: Checks!
 	if err = checksBuffer(memBuffer); err != nil {
@@ -62,7 +62,7 @@ func TestSQLMemory(t *testing.T) {
 	client, memBuffer := useClientAndMemoryBuffer(ctx, clickhouse)
 	defer client.Close()
 	// STEP 5: Write own data to redis
-	writeAPI := useWriteAPI(client, memBuffer)
+	writeAPI := useWriteAPI(ctx, client, memBuffer)
 	writeDataToBuffer(writeAPI)
 	// STEP 6: Checks!
 	if err = checksBuffer(memBuffer); err != nil {
@@ -92,7 +92,7 @@ func TestMemorySafe(t *testing.T) {
 	client, memBuffer := useClientAndMemoryBuffer(ctx, clickhouse)
 	defer client.Close()
 	// STEP 5: Write own data to redis
-	writeAPI := useWriteAPI(client, memBuffer)
+	writeAPI := useWriteAPI(ctx, client, memBuffer)
 	writeDataToBufferSafe(writeAPI)
 	// STEP 6: Checks!
 	if err = checksBuffer(memBuffer); err != nil {
