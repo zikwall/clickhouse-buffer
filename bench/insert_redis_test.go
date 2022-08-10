@@ -8,16 +8,16 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+	"github.com/zikwall/clickhouse-buffer/v4/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxredis"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 // x100
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertRedisObjects/1000-12                      100          22404356 ns/op           96095 B/op       2322 allocs/op
 // BenchmarkInsertRedisObjects/100-12                       100           2243544 ns/op            9673 B/op        233 allocs/op
@@ -110,7 +110,7 @@ func BenchmarkInsertRedisObjects(b *testing.B) {
 // x100
 // goos: linux
 // goarch: amd64
-// pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+// pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 // BenchmarkInsertRedisVectors/1000-12                  100          22145258 ns/op           92766 B/op       2274 allocs/op
 // BenchmarkInsertRedisVectors/100-12                   100           2320692 ns/op            9339 B/op        229 allocs/op

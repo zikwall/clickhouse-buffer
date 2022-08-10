@@ -1,5 +1,5 @@
-[![build](https://github.com/zikwall/clickhouse-buffer/workflows/build_and_tests/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v3/actions)
-[![build](https://github.com/zikwall/clickhouse-buffer/workflows/golangci_lint/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v3/actions)
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/build_and_tests/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v4/actions)
+[![build](https://github.com/zikwall/clickhouse-buffer/workflows/golangci_lint/badge.svg)](https://github.com/zikwall/clickhouse-buffer/v4/actions)
 
 <div align="center">
   <h1>Clickhouse Buffer</h1>
@@ -42,9 +42,9 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 import (
     "database/sql"
 
-    "github.com/zikwall/clickhouse-buffer/v3/src/cx"
-    "github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
-    "github.com/zikwall/clickhouse-buffer/v3/src/db/cxsql"
+    "github.com/zikwall/clickhouse-buffer/v4/src/cx"
+    "github.com/zikwall/clickhouse-buffer/v4/src/db/cxnative"
+    "github.com/zikwall/clickhouse-buffer/v4/src/db/cxsql"
 )
 
 // if you already have a connection to Clickhouse you can just use wrappers
@@ -98,9 +98,9 @@ ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
 
 ```go
 import (
-    clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-    "github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxmem"
-    "github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
+    clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+    "github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxmem"
+    "github.com/zikwall/clickhouse-buffer/v4/src/db/cxnative"
 )
 // create root client
 client := clickhousebuffer.NewClientWithOptions(ctx, ch,
@@ -264,7 +264,7 @@ $ go test -race -v ./... -tags=integration
 ```shell
 goos: linux
 goarch: amd64
-pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
 ```
 
@@ -331,7 +331,7 @@ BenchmarkInsertRedisVectors/10-12                    100            202146 ns/op
 ```shell
 goos: darwin
 goarch: arm64
-pkg: github.com/zikwall/clickhouse-buffer/v3/bench
+pkg: github.com/zikwall/clickhouse-buffer/v4/bench
 ```
 
 ```shell

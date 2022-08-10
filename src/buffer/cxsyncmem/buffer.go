@@ -3,7 +3,7 @@ package cxsyncmem
 import (
 	"sync"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
 )
 
 // special for tests with locks

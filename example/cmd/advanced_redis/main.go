@@ -12,11 +12,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 
-	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v3"
-	"github.com/zikwall/clickhouse-buffer/v3/example/pkg/tables"
-	"github.com/zikwall/clickhouse-buffer/v3/src/buffer/cxredis"
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
-	"github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
+	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
+	"github.com/zikwall/clickhouse-buffer/v4/example/pkg/tables"
+	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxredis"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/db/cxnative"
 )
 
 func main() {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/zikwall/clickhouse-buffer/v3/src/cx"
-	"github.com/zikwall/clickhouse-buffer/v3/src/retry"
+	"github.com/zikwall/clickhouse-buffer/v4/src/cx"
+	"github.com/zikwall/clickhouse-buffer/v4/src/retry"
 )
 
 // Client main interface, provides a top-level API.
