@@ -9,7 +9,7 @@
 ## Install
 
 - for go-clickhouse v1 `$ go get -u github.com/zikwall/clickhouse-buffer`
-- for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v3`
+- for go-clickhouse v2 `$ go get -u github.com/zikwall/clickhouse-buffer/v4`
 
 ### Why and why
 
