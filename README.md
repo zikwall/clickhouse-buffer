@@ -42,15 +42,16 @@ This is due to the fact that Clickhouse is designed so that it better processes 
 import (
     "database/sql"
 
+    "github.com/zikwall/clickhouse-buffer/v3/src/cx"
     "github.com/zikwall/clickhouse-buffer/v3/src/db/cxnative"
     "github.com/zikwall/clickhouse-buffer/v3/src/db/cxsql"
 )
 
 // if you already have a connection to Clickhouse you can just use wrappers
 // with native interface
-ch := cxnative.NewClickhouseWithConn(driver.Conn)
+ch := cxnative.NewClickhouseWithConn(driver.Conn, &cx.RuntimeOptions{})
 // or use database/sql interface
-ch := cxsql.NewClickhouseWithConn(*sql.DB)
+ch := cxsql.NewClickhouseWithConn(*sql.DB, &cx.RuntimeOptions{})
 ```
 
 ```go
@@ -73,7 +74,7 @@ ch, conn, err := cxnative.NewClickhouse(ctx, &clickhouse.Options{
             Method: clickhouse.CompressionLZ4,
         },
         Debug: ctx.Bool("debug"),
-})
+}, &cx.RuntimeOptions{})
 // or with database/sql interface
 ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
         Addr: ctx.StringSlice("clickhouse-host"),
@@ -90,7 +91,7 @@ ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
             Method: clickhouse.CompressionLZ4,
         },
         Debug: ctx.Bool("debug"),
-}, &cxsql.RuntimeOptions{})
+}, &cx.RuntimeOptions{})
 ```
 
 #### Create main data streamer client and write data
@@ -111,10 +112,11 @@ buffer := cxmem.NewBuffer(
 )
 // or use redis
 buffer := cxredis.NewBuffer(
-    contetx, *redis.Client, "bucket", client.Options().BatchSize(),
+    ctx, *redis.Client, "bucket", client.Options().BatchSize(),
 )
 // create new writer api: table name with columns
 writeAPI := client.Writer(
+	ctx,
 	cx.NewView("clickhouse_database.clickhouse_table", []string{"id", "uuid", "insert_ts"}), 
 	buffer,
 )

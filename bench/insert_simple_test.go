@@ -66,6 +66,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -78,6 +79,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -90,6 +92,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -102,6 +105,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -114,6 +118,7 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -158,6 +163,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -170,6 +176,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -182,6 +189,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -194,6 +202,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -206,6 +215,7 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -250,6 +260,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -262,6 +273,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -274,6 +286,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -286,6 +299,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -298,6 +312,7 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -342,6 +357,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("10000000", func(b *testing.B) {
 		client.Options().SetBatchSize(10000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -352,6 +368,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -362,6 +379,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -372,6 +390,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -382,6 +401,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -392,6 +412,7 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -434,6 +455,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -446,6 +468,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -458,6 +481,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -470,6 +494,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -482,6 +507,7 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -526,6 +552,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("10000000", func(b *testing.B) {
 		client.Options().SetBatchSize(10000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -536,6 +563,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -546,6 +574,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -556,6 +585,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -566,6 +596,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -576,6 +607,7 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -618,6 +650,7 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	b.Run("1000000", func(b *testing.B) {
 		client.Options().SetBatchSize(1000001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -630,6 +663,7 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	b.Run("100000", func(b *testing.B) {
 		client.Options().SetBatchSize(100001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -642,6 +676,7 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	b.Run("10000", func(b *testing.B) {
 		client.Options().SetBatchSize(10001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -654,6 +689,7 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	b.Run("1000", func(b *testing.B) {
 		client.Options().SetBatchSize(1001)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)
@@ -666,6 +702,7 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	b.Run("100", func(b *testing.B) {
 		client.Options().SetBatchSize(101)
 		writeAPI = client.Writer(
+			ctx,
 			cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),
 			cxmem.NewBuffer(client.Options().BatchSize()),
 		)

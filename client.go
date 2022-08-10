@@ -20,7 +20,7 @@ type Client interface {
 	WriteBatch(context.Context, cx.View, *cx.Batch) error
 	// Writer returns the asynchronous, non-blocking, Writer client.
 	// Ensures using a single Writer instance for each table pair.
-	Writer(cx.View, cx.Buffer) Writer
+	Writer(context.Context, cx.View, cx.Buffer) Writer
 	// WriterBlocking returns the synchronous, blocking, WriterBlocking client.
 	// Ensures using a single WriterBlocking instance for each table pair.
 	WriterBlocking(cx.View) WriterBlocking
@@ -83,11 +83,11 @@ func (c *clientImpl) Options() *Options {
 
 // Writer returns the asynchronous, non-blocking, Writer client.
 // Ensures using a single Writer instance for each table pair.
-func (c *clientImpl) Writer(view cx.View, buf cx.Buffer) Writer {
+func (c *clientImpl) Writer(ctx context.Context, view cx.View, buf cx.Buffer) Writer {
 	key := view.Name
 	c.mu.Lock()
 	if _, ok := c.writeAPIs[key]; !ok {
-		c.writeAPIs[key] = NewWriter(c.context, c, view, buf)
+		c.writeAPIs[key] = NewWriter(ctx, c, view, buf)
 	}
 	writer := c.writeAPIs[key]
 	c.mu.Unlock()

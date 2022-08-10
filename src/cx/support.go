@@ -9,7 +9,7 @@ import (
 const defaultInsertDurationTimeout = time.Millisecond * 15000
 
 // GetDefaultInsertDurationTimeout to get away from this decision in the near future
-func GetDefaultInsertDurationTimeout() time.Duration {
+func getDefaultInsertDurationTimeout() time.Duration {
 	return defaultInsertDurationTimeout
 }
 
@@ -53,4 +53,15 @@ func IsResendAvailable(err error) bool {
 		return false
 	}
 	return true
+}
+
+type RuntimeOptions struct {
+	WriteTimeout time.Duration
+}
+
+func (r *RuntimeOptions) GetWriteTimeout() time.Duration {
+	if r.WriteTimeout != 0 {
+		return r.WriteTimeout
+	}
+	return getDefaultInsertDurationTimeout()
 }

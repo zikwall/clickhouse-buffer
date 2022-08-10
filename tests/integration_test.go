@@ -65,7 +65,7 @@ func TestNative(t *testing.T) {
 	}
 	defer client.Close()
 	// STEP 5: Write own data to redis
-	writeAPI := useWriteAPI(client, redisBuffer)
+	writeAPI := useWriteAPI(ctx, client, redisBuffer)
 	var errorsSlice []error
 	mu := &sync.RWMutex{}
 	errorsCh := writeAPI.Errors()
@@ -128,7 +128,7 @@ func TestSQL(t *testing.T) {
 	}
 	defer client.Close()
 	// STEP 5: Write own data to redis
-	writeAPI := useWriteAPI(client, redisBuffer)
+	writeAPI := useWriteAPI(ctx, client, redisBuffer)
 	var errorsSlice []error
 	mu := &sync.RWMutex{}
 	errorsCh := writeAPI.Errors()
@@ -336,7 +336,9 @@ func useOptions() *clickhouse.Options {
 }
 
 func useClickhousePool(ctx context.Context) (driver.Conn, cx.Clickhouse, error) {
-	nativeClickhouse, conn, err := cxnative.NewClickhouse(ctx, useOptions())
+	nativeClickhouse, conn, err := cxnative.NewClickhouse(ctx, useOptions(), &cx.RuntimeOptions{
+		WriteTimeout: 15 * time.Second,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -344,7 +346,7 @@ func useClickhousePool(ctx context.Context) (driver.Conn, cx.Clickhouse, error) 
 }
 
 func useClickhouseSQLPool(ctx context.Context) (*sql.DB, cx.Clickhouse, error) {
-	sqlClickhouse, conn, err := cxsql.NewClickhouse(ctx, useOptions(), &cxsql.RuntimeOptions{})
+	sqlClickhouse, conn, err := cxsql.NewClickhouse(ctx, useOptions(), &cx.RuntimeOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -374,8 +376,8 @@ func useClientAndRedisBuffer(
 	return client, buf, nil
 }
 
-func useWriteAPI(client clickhousebuffer.Client, buf cx.Buffer) clickhousebuffer.Writer {
-	writeAPI := client.Writer(cx.NewView(integrationTableName, []string{"id", "uuid", "insert_ts"}), buf)
+func useWriteAPI(ctx context.Context, client clickhousebuffer.Client, buf cx.Buffer) clickhousebuffer.Writer {
+	writeAPI := client.Writer(ctx, cx.NewView(integrationTableName, []string{"id", "uuid", "insert_ts"}), buf)
 	return writeAPI
 }
 
