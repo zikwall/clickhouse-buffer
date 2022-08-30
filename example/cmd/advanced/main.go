@@ -51,11 +51,12 @@ func main() {
 		log.Panicln(err)
 	}
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.DefaultOptions().
-		SetDebugMode(true).
-		SetFlushInterval(1000).
-		SetBatchSize(10),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(1000),
+		clickhousebuffer.WithBatchSize(10),
+		clickhousebuffer.WithDebugMode(true),
+		clickhousebuffer.WithRetry(false),
+	))
 	writeAPI := client.Writer(
 		ctx,
 		cx.NewView(tables.AdvancedTableName(), tables.AdvancedTableColumns()),

@@ -103,9 +103,12 @@ import (
     "github.com/zikwall/clickhouse-buffer/v4/src/db/cxnative"
 )
 // create root client
-client := clickhousebuffer.NewClientWithOptions(ctx, ch,
-    clickhousebuffer.DefaultOptions().SetFlushInterval(1000).SetBatchSize(5000),
-)
+client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
+    clickhousebuffer.WithFlushInterval(2000),
+    clickhousebuffer.WithBatchSize(5000),
+    clickhousebuffer.WithDebugMode(true),
+    clickhousebuffer.WithRetry(true),
+))
 // create buffer engine
 buffer := cxmem.NewBuffer(
     client.Options().BatchSize(),
@@ -213,12 +216,12 @@ type Queueable interface {
 	Queue(packet *Packet)
 	Retries() <-chan *Packet
 }
-```
 
-and set it as an engine:
-
-```go
-clickhousebuffer.DefaultOptions().SetDebugMode(true).SetRetryIsEnabled(true).SetQueueEngine(CustomQueueable)
+// and set it as an engine:
+clickhousebuffer.NewOptions(
+    clickhousebuffer.WithRetry(false),
+    clickhousebuffer.WithRetryQueueEngine(CustomQueueable),
+)
 ```
 
 #### Logs:
@@ -227,14 +230,15 @@ You can implement your logger by simply implementing the Logger interface and th
 
 ```go
 type Logger interface {
-	Log(message interface{})
-	Logf(format string, v ...interface{})
+    Log(message interface{})
+    Logf(format string, v ...interface{})
 }
-```
 
-```go
-// example with default options
-clickhousebuffer.DefaultOptions().SetDebugMode(true).SetLogger(SomeLogger)
+// example with options
+clickhousebuffer.NewOptions(
+    clickhousebuffer.WithDebugMode(true),
+    clickhousebuffer.WithLogger(SomeLogger),
+)
 ```
 
 #### Tests:

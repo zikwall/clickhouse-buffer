@@ -50,11 +50,12 @@ func main() {
 	if err := tables.CreateTableNative(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
-	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.DefaultOptions().
-		SetDebugMode(true).
-		SetFlushInterval(1000).
-		SetBatchSize(5),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(1000),
+		clickhousebuffer.WithBatchSize(5),
+		clickhousebuffer.WithDebugMode(true),
+		clickhousebuffer.WithRetry(false),
+	))
 	writeAPI := client.Writer(
 		ctx,
 		cx.NewView(tables.ExampleTableName(), tables.ExampleTableColumns()),

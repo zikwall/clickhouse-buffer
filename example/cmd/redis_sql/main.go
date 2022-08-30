@@ -51,11 +51,12 @@ func main() {
 	if err := tables.CreateTableSQL(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
-	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.DefaultOptions().
-		SetDebugMode(true).
-		SetFlushInterval(1000).
-		SetBatchSize(5),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(1000),
+		clickhousebuffer.WithBatchSize(5),
+		clickhousebuffer.WithDebugMode(true),
+		clickhousebuffer.WithRetry(false),
+	))
 	rxbuffer, err := cxredis.NewBuffer(ctx, redis.NewClient(&redis.Options{
 		Addr:     redisHost,
 		Password: redisPass,

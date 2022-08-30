@@ -53,12 +53,10 @@ func BenchmarkInsertSimplestPreallocateVectors(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(10000000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(10000000),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -150,12 +148,10 @@ func BenchmarkInsertSimplestPreallocateObjects(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(10000000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(10000000),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -247,12 +243,10 @@ func BenchmarkInsertSimplestObjects(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(10000000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(10000000),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -344,12 +338,10 @@ func BenchmarkInsertSimplestObjectsJust(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(10000000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(10000000),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -442,12 +434,10 @@ func BenchmarkInsertSimplestVectors(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(100),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(100),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -539,12 +529,10 @@ func BenchmarkInsertSimplestVectorsJust(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(10000000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(10000000),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()
@@ -637,12 +625,10 @@ func BenchmarkInsertSimplestEmptyVectors(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000000).
-			SetBatchSize(100),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000000),
+		clickhousebuffer.WithBatchSize(100),
+	))
 
 	var writeAPI clickhousebuffer.Writer
 	b.ResetTimer()

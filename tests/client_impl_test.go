@@ -110,11 +110,12 @@ func TestClient(t *testing.T) {
 
 	t.Run("it should be correct send and flush data", func(t *testing.T) {
 		client := clickhousebuffer.NewClientWithOptions(ctx, &ClickhouseImplMock{},
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(200).
-				SetBatchSize(3).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(200),
+				clickhousebuffer.WithBatchSize(3),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -145,11 +146,12 @@ func TestClient(t *testing.T) {
 	// nolint:dupl // it's not important here
 	t.Run("it should be successfully received three errors about writing", func(t *testing.T) {
 		client := clickhousebuffer.NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -197,11 +199,12 @@ func TestClient(t *testing.T) {
 	t.Run("it should be successfully handle retry", func(t *testing.T) {
 		mock := &ClickhouseImplRetryMock{}
 		client := clickhousebuffer.NewClientWithOptions(ctx, mock,
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -245,11 +248,12 @@ func TestClient(t *testing.T) {
 	t.Run("[safe] it should be successfully handle retry", func(t *testing.T) {
 		mock := &ClickhouseImplRetryMock{}
 		client := clickhousebuffer.NewClientWithOptions(ctx, mock,
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -292,11 +296,12 @@ func TestClient(t *testing.T) {
 	t.Run("it should be successfully handle retry without error channel", func(t *testing.T) {
 		mock := &ClickhouseImplRetryMock{}
 		client := clickhousebuffer.NewClientWithOptions(ctx, mock,
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -323,11 +328,12 @@ func TestClient(t *testing.T) {
 	// nolint:dupl // it's not important here
 	t.Run("it should be successfully broken retry", func(t *testing.T) {
 		client := clickhousebuffer.NewClientWithOptions(ctx, &ClickhouseImplErrMockFailed{},
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		memoryBuffer := cxsyncmem.NewBuffer(
@@ -379,11 +385,12 @@ func TestClientImplWriteBatch(t *testing.T) {
 
 	t.Run("it should be correct send data", func(t *testing.T) {
 		client := clickhousebuffer.NewClientWithOptions(ctx, &ClickhouseImplMock{},
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		writerBlocking := client.WriterBlocking(tableView)
@@ -405,11 +412,12 @@ func TestClientImplWriteBatch(t *testing.T) {
 
 	t.Run("it should be successfully received error about writing", func(t *testing.T) {
 		client := clickhousebuffer.NewClientWithOptions(ctx, &ClickhouseImplErrMock{},
-			clickhousebuffer.DefaultOptions().
-				SetFlushInterval(10).
-				SetBatchSize(1).
-				SetDebugMode(true).
-				SetRetryIsEnabled(true),
+			clickhousebuffer.NewOptions(
+				clickhousebuffer.WithFlushInterval(10),
+				clickhousebuffer.WithBatchSize(1),
+				clickhousebuffer.WithDebugMode(true),
+				clickhousebuffer.WithRetry(true),
+			),
 		)
 		defer client.Close()
 		writerBlocking := client.WriterBlocking(tableView)
