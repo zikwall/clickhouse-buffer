@@ -104,10 +104,10 @@ import (
 )
 // create root client
 client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
-   clickhousebuffer.WithFlushInterval(2000),
-   clickhousebuffer.WithBatchSize(5000),
-   clickhousebuffer.WithDebugMode(true),
-   clickhousebuffer.WithRetry(true),
+    clickhousebuffer.WithFlushInterval(2000),
+    clickhousebuffer.WithBatchSize(5000),
+    clickhousebuffer.WithDebugMode(true),
+    clickhousebuffer.WithRetry(true),
 ))
 // create buffer engine
 buffer := cxmem.NewBuffer(
