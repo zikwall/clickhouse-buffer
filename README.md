@@ -193,10 +193,10 @@ You can implement own data-buffer interface: `File`, `Rabbitmq`, `CustomMemory`,
 
 ```go
 type Buffer interface {
-	Write(vec Vector)
-	Read() []Vector
-	Len() int
-	Flush()
+    Write(vec Vector)
+    Read() []Vector
+    Len() int
+    Flush()
 }
 ```
 
@@ -213,8 +213,8 @@ You can implement queue engine by defining the `Queueable` interface:
 
 ```go
 type Queueable interface {
-	Queue(packet *Packet)
-	Retries() <-chan *Packet
+    Queue(packet *Packet)
+    Retries() <-chan *Packet
 }
 
 // and set it as an engine:
