@@ -354,9 +354,10 @@ func useClickhouseSQLPool(ctx context.Context) (*sql.DB, cx.Clickhouse, error) {
 }
 
 func useCommonClient(ctx context.Context, ch cx.Clickhouse) clickhousebuffer.Client {
-	return clickhousebuffer.NewClientWithOptions(ctx, ch,
-		clickhousebuffer.DefaultOptions().SetFlushInterval(500).SetBatchSize(6),
-	)
+	return clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithBatchSize(6),
+		clickhousebuffer.WithFlushInterval(500),
+	))
 }
 
 func useClientAndRedisBuffer(

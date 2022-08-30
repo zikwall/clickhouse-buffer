@@ -44,7 +44,7 @@ type clientImpl struct {
 
 // NewClient creates an object implementing the Client interface with default options
 func NewClient(ctx context.Context, clickhouse cx.Clickhouse) Client {
-	return NewClientWithOptions(ctx, clickhouse, DefaultOptions())
+	return NewClientWithOptions(ctx, clickhouse, NewOptions())
 }
 
 // NewClientWithOptions similar to NewClient except that there is a configuration option

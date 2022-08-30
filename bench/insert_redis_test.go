@@ -28,12 +28,10 @@ import (
 func BenchmarkInsertRedisObjects(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000).
-			SetBatchSize(1000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000),
+		clickhousebuffer.WithBatchSize(1000),
+	))
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPass := os.Getenv("REDIS_PASS")
 	var writeAPI clickhousebuffer.Writer
@@ -121,12 +119,10 @@ func BenchmarkInsertRedisObjects(b *testing.B) {
 func BenchmarkInsertRedisVectors(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{},
-		clickhousebuffer.DefaultOptions().
-			SetDebugMode(false).
-			SetFlushInterval(10000).
-			SetBatchSize(1000),
-	)
+	client := clickhousebuffer.NewClientWithOptions(ctx, &clickhouseMock{}, clickhousebuffer.NewOptions(
+		clickhousebuffer.WithFlushInterval(10000),
+		clickhousebuffer.WithBatchSize(1000),
+	))
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPass := os.Getenv("REDIS_PASS")
 	var writeAPI clickhousebuffer.Writer
