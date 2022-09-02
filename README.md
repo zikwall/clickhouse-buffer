@@ -60,37 +60,38 @@ ch := cxsql.NewClickhouseWithConn(*sql.DB, &cx.RuntimeOptions{})
 
 // with native interface
 ch, conn, err := cxnative.NewClickhouse(ctx, &clickhouse.Options{
-        Addr: ctx.StringSlice("clickhouse-host"),
+    Addr: ctx.StringSlice("clickhouse-host"),
         Auth: clickhouse.Auth{
-            Database:  ctx.String("clickhouse-database"),
-            Username:  ctx.String("clickhouse-username"),
-            Password:  ctx.String("clickhouse-password"),
-        },
-        Settings: clickhouse.Settings{
-            "max_execution_time": 60,
-        },
-        DialTimeout: 5 * time.Second,
-        Compression: &clickhouse.Compression{
-            Method: clickhouse.CompressionLZ4,
-        },
-        Debug: ctx.Bool("debug"),
+        Database:  ctx.String("clickhouse-database"),
+        Username:  ctx.String("clickhouse-username"),
+        Password:  ctx.String("clickhouse-password"),
+    },
+    Settings: clickhouse.Settings{
+        "max_execution_time": 60,
+    },
+    DialTimeout: 5 * time.Second,
+    Compression: &clickhouse.Compression{
+        Method: clickhouse.CompressionLZ4,
+    },
+    Debug: ctx.Bool("debug"),
 }, &cx.RuntimeOptions{})
+
 // or with database/sql interface
 ch, conn, err := cxsql.NewClickhouse(ctx, &clickhouse.Options{
-        Addr: ctx.StringSlice("clickhouse-host"),
+    Addr: ctx.StringSlice("clickhouse-host"),
         Auth: clickhouse.Auth{
-            Database:  ctx.String("clickhouse-database"),
-            Username:  ctx.String("clickhouse-username"),
-            Password:  ctx.String("clickhouse-password"),
-        },
-        Settings: clickhouse.Settings{
-            "max_execution_time": 60,
-        },
-        DialTimeout: 5 * time.Second,
-        Compression: &clickhouse.Compression{
-            Method: clickhouse.CompressionLZ4,
-        },
-        Debug: ctx.Bool("debug"),
+        Database:  ctx.String("clickhouse-database"),
+        Username:  ctx.String("clickhouse-username"),
+        Password:  ctx.String("clickhouse-password"),
+    },
+    Settings: clickhouse.Settings{
+        "max_execution_time": 60,
+    },
+    DialTimeout: 5 * time.Second,
+    Compression: &clickhouse.Compression{
+        Method: clickhouse.CompressionLZ4,
+    },
+    Debug: ctx.Bool("debug"),
 }, &cx.RuntimeOptions{})
 ```
 
@@ -119,27 +120,44 @@ buffer := cxredis.NewBuffer(
 )
 // create new writer api: table name with columns
 writeAPI := client.Writer(
-	ctx,
-	cx.NewView("clickhouse_database.clickhouse_table", []string{"id", "uuid", "insert_ts"}), 
-	buffer,
+    ctx, 
+    // order of the values  []string{"id", "uuid", "insert_ts"}
+    // must correspond to the return values in the (*MyTable).Row() method, which will be shown below
+    cx.NewView("clickhouse_database.my_table", []string{"id", "uuid", "insert_ts"}),
+    buffer,
 )
 
 // define your custom data structure
-type MyCustomDataView struct {
-	id       int
-	uuid     string
-	insertTS time.Time
+type MyTable struct {
+    id       int
+    uuid     string
+    insertTS time.Time
 }
+// the structure above is a reflection of the entity-table in the database
+// CREATE TABLE IF NOT EXISTS MyTable (
+//  id        	Int32,
+//  uuid        String,
+//  insert_ts   String
+// ) engine=Memory
+
 // and implement cx.Vectorable interface
-func (t *MyCustomDataView) Row() cx.Vector {
-	return cx.Vector{t.id, t.uuid, t.insertTS.Format(time.RFC822)}
+// (*MyTable).Row() method describes how will the data be written to the table and in what order
+// similar to the INSERT INTO (id, uuid, insert_ts) VALUES (...), (...), (...) query
+// the order of return must correspond to the scheme described above: []string{"id", "uuid", "insert_ts"}
+func (t *MyTable) Row() cx.Vector {
+    return cx.Vector{
+        t.id,
+        t.uuid,
+        t.insertTS.Format(time.RFC822),
+    }
 }
+
 // async write your data
-writeAPI.WriteRow(&MyCustomDataView{
+writeAPI.WriteRow(&MyTable{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 // or use a safe way (same as WriteRow, but safer)
-writeAPI.TryWriteRow(&MyCustomDataView{
+writeAPI.TryWriteRow(&MyTable{
     id: 1, uuid: "1", insertTS: time.Now(),
 })
 // or faster
@@ -157,9 +175,9 @@ When using a non-blocking record, you can track errors through a special error c
 ```go
 errorsCh := writeAPI.Errors()
 go func() {
-	for err := range errorsCh {
-		log.Warning(fmt.Sprintf("clickhouse write error: %s", err.Error()))
-	}
+    for err := range errorsCh {
+        log.Warning(fmt.Sprintf("clickhouse write error: %s", err.Error()))
+    }
 }()
 ```
 
@@ -168,11 +186,11 @@ Using the blocking writer interface
 ```go
 // create new writer api: table name with columns
 writerBlocking := client.WriterBlocking(cx.View{
-    Name:    "clickhouse_database.clickhouse_table",
+    Name:    "clickhouse_database.my_table",
     Columns: []string{"id", "uuid", "insert_ts"},
 })
 // non-asynchronous writing of data directly to Clickhouse
-err := writerBlocking.WriteRow(ctx, []&MyCustomDataView{
+err := writerBlocking.WriteRow(ctx, []*MyTable{
     {
         id: 1, uuid: "1", insertTS: time.Now(),
     },
