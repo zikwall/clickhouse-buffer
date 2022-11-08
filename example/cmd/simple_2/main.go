@@ -46,9 +46,11 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	if err := tables.CreateTableNative(ctx, conn); err != nil {
+
+	if err = tables.CreateTableNative(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
+
 	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
 		clickhousebuffer.WithFlushInterval(1000),
 		clickhousebuffer.WithBatchSize(5),

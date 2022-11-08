@@ -1,6 +1,7 @@
 package cx
 
 import (
+	"errors"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -13,6 +14,7 @@ func getDefaultInsertDurationTimeout() time.Duration {
 	return defaultInsertDurationTimeout
 }
 
+// nolint:gochecknoglobals // it's OK, readonly variable
 // But before that, you need to check error code from Clickhouse,
 // this is necessary in order to ensure the finiteness of queue.
 // see: https://github.com/ClickHouse/ClickHouse/blob/master/src/Common/ErrorCodes.cpp
@@ -42,15 +44,11 @@ var noRetryErrors = map[int32]struct{}{
 // IsResendAvailable checks whether it is possible to resend undelivered messages to the Clickhouse database
 // based on the error received from Clickhouse
 func IsResendAvailable(err error) bool {
-	var (
-		exception *clickhouse.Exception
-		ok        bool
-	)
-	if exception, ok = err.(*clickhouse.Exception); !ok {
-		return false
-	}
-	if _, ok = noRetryErrors[exception.Code]; ok {
-		return false
+	var e *clickhouse.Exception
+	if errors.As(err, &e) {
+		if _, ok := noRetryErrors[e.Code]; ok {
+			return false
+		}
 	}
 	return true
 }

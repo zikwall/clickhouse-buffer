@@ -3,6 +3,7 @@ package cxsql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -39,15 +40,15 @@ func (c *clickhouseSQL) Insert(ctx context.Context, view cx.View, rows []cx.Vect
 	}
 	stmt, err := tx.Prepare(insertQuery(view.Name, view.Columns))
 	if err != nil {
-		// If you do not call the rollback function there will be a memory leak and goroutine
-		// Such a leak can occur if there is no access to the table or there is no table itself
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
+		// if we do not call rollback function there will be a memory leak and goroutine
+		// such a leak can occur if there is no access to the table or there is no table itself
+		if rErr := tx.Rollback(); rErr != nil {
+			return 0, fmt.Errorf("rollback failed: %w with previous error: %s", rErr, err.Error())
 		}
 		return 0, err
 	}
 	defer func() {
-		if err := stmt.Close(); err != nil {
+		if err = stmt.Close(); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -58,13 +59,13 @@ func (c *clickhouseSQL) Insert(ctx context.Context, view cx.View, rows []cx.Vect
 	var affected uint64
 	for _, row := range rows {
 		// row affected is not supported
-		if _, err := stmt.ExecContext(timeoutContext, row...); err == nil {
+		if _, err = stmt.ExecContext(timeoutContext, row...); err == nil {
 			affected++
 		} else {
 			log.Println(err)
 		}
 	}
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		return 0, err
 	}
 	return affected, nil
@@ -80,17 +81,17 @@ func NewClickhouse(
 	error,
 ) {
 	conn := clickhouse.OpenDB(options)
-	ctx = clickhouse.Context(ctx,
+	if err := conn.PingContext(clickhouse.Context(ctx,
 		clickhouse.WithSettings(clickhouse.Settings{
 			"max_block_size": 10,
 		}),
 		clickhouse.WithProgress(func(p *clickhouse.Progress) {
 			fmt.Println("progress: ", p)
 		}),
-	)
-	if err := conn.PingContext(ctx); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			fmt.Printf("catch exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+	)); err != nil {
+		var e *clickhouse.Exception
+		if errors.As(err, &e) {
+			fmt.Printf("catch exception [%d] %s \n%s\n", e.Code, e.Message, e.StackTrace)
 		}
 		return nil, nil, err
 	}

@@ -133,25 +133,25 @@ func TestSQL(t *testing.T) {
 	mu := &sync.RWMutex{}
 	errorsCh := writeAPI.Errors()
 	go func() {
-		for err := range errorsCh {
+		for chErr := range errorsCh {
 			mu.Lock()
-			errorsSlice = append(errorsSlice, err)
+			errorsSlice = append(errorsSlice, chErr)
 			mu.Unlock()
 		}
 	}()
 	writeDataToBuffer(writeAPI)
 	// STEP 6: Checks!
-	if err := checksBuffer(redisBuffer); err != nil {
+	if err = checksBuffer(redisBuffer); err != nil {
 		t.Fatal(err)
 	}
-	if err := checksClickhouseSQL(ctx, conn); err != nil {
+	if err = checksClickhouseSQL(ctx, conn); err != nil {
 		t.Fatal(err)
 	}
 	// retry test fails
 	dropTableSQL(ctx, conn)
 	// it should be successful case
 	writeDataToBuffer(writeAPI)
-	if err := checksBuffer(redisBuffer); err != nil {
+	if err = checksBuffer(redisBuffer); err != nil {
 		t.Fatal(err)
 	}
 	// we expect an exception from Clickhouse: code: 60, message: Table default.test_integration_xxx_xxx doesn't exist
@@ -186,12 +186,12 @@ func fetchClickhouseRows(ctx context.Context, conn driver.Conn) ([]clickhouseRow
 			uuid      string
 			createdAt string
 		)
-		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
+		if err = rws.Scan(&id, &uuid, &createdAt); err != nil {
 			return nil, err
 		}
 		values = append(values, clickhouseRowData{id, uuid, createdAt})
 	}
-	if err := rws.Err(); err != nil {
+	if err = rws.Err(); err != nil {
 		return nil, err
 	}
 	return values, err
@@ -213,12 +213,12 @@ func fetchClickhouseRowsSQL(ctx context.Context, conn *sql.DB) ([]clickhouseRowD
 			uuid      string
 			createdAt string
 		)
-		if err := rws.Scan(&id, &uuid, &createdAt); err != nil {
+		if err = rws.Scan(&id, &uuid, &createdAt); err != nil {
 			return nil, err
 		}
 		values = append(values, clickhouseRowData{id, uuid, createdAt})
 	}
-	if err := rws.Err(); err != nil {
+	if err = rws.Err(); err != nil {
 		return nil, err
 	}
 	return values, err

@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	if err := tables.CreateTableNative(ctx, conn); err != nil {
+	if err = tables.CreateTableNative(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
 	client := clickhousebuffer.NewClientWithOptions(ctx, ch, clickhousebuffer.NewOptions(
@@ -71,8 +71,8 @@ func main() {
 	wg.Add(1)
 	go func() {
 		errorsCh := writeAPI.Errors()
-		for err := range errorsCh {
-			log.Printf("clickhouse write error: %s\n", err.Error())
+		for chErr := range errorsCh {
+			log.Printf("clickhouse write error: %s\n", chErr.Error())
 		}
 		wg.Done()
 	}()

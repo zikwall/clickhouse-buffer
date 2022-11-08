@@ -34,5 +34,5 @@ func NewBuffer(ctx context.Context, rdb *redis.Client, bucket string, bufferSize
 }
 
 func (r *redisBuffer) isContextClosedErr(err error) bool {
-	return errors.Is(err, redis.ErrClosed) && r.context.Err() != nil && r.context.Err() == context.Canceled
+	return errors.Is(err, redis.ErrClosed) && r.context.Err() != nil && errors.Is(r.context.Err(), context.Canceled)
 }

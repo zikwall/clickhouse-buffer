@@ -42,6 +42,7 @@ func AdvancedTableColumns() []string {
 	return []string{"Col1", "Col2", "Col3", "Col4", "Col6", "Col7", "Col8", "Col9", "Col10", "Col11", "Col12", "Col13"}
 }
 
+// nolint:gochecknoglobals // it's OK
 // SELECT DISTINCT alias_to
 // FROM system.data_type_families
 //
