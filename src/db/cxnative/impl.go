@@ -2,6 +2,7 @@ package cxnative
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -34,13 +35,13 @@ func (c *clickhouseNative) Insert(ctx context.Context, view cx.View, rows []cx.V
 	}
 	var affected uint64
 	for _, row := range rows {
-		if err := batch.Append(row...); err != nil {
+		if err = batch.Append(row...); err != nil {
 			log.Println(err)
 		} else {
 			affected++
 		}
 	}
-	if err := batch.Send(); err != nil {
+	if err = batch.Send(); err != nil {
 		return 0, err
 	}
 	return affected, nil
@@ -63,17 +64,17 @@ func NewClickhouse(
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx = clickhouse.Context(ctx,
+	if err = conn.Ping(clickhouse.Context(ctx,
 		clickhouse.WithSettings(clickhouse.Settings{
 			"max_block_size": 10,
 		}),
 		clickhouse.WithProgress(func(p *clickhouse.Progress) {
 			fmt.Println("progress: ", p)
 		}),
-	)
-	if err := conn.Ping(ctx); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			fmt.Printf("catch exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+	)); err != nil {
+		var e *clickhouse.Exception
+		if errors.As(err, &e) {
+			fmt.Printf("catch exception [%d] %s \n%s\n", e.Code, e.Message, e.StackTrace)
 		}
 		return nil, nil, err
 	}

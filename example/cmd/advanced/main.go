@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	if err := tables.CreateAdvancedTableNative(ctx, conn); err != nil {
+	if err = tables.CreateAdvancedTableNative(ctx, conn); err != nil {
 		log.Panicln(err)
 	}
 
@@ -67,8 +67,8 @@ func main() {
 	wg.Add(1)
 	go func() {
 		errorsCh := writeAPI.Errors()
-		for err := range errorsCh {
-			log.Printf("clickhouse write error: %s\n", err.Error())
+		for chErr := range errorsCh {
+			log.Printf("clickhouse write error: %s\n", chErr.Error())
 		}
 		wg.Done()
 	}()

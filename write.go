@@ -190,9 +190,11 @@ func (w *writer) runBufferBridge() {
 		if w.bufferEngine.Len() > 0 {
 			w.flush()
 		}
+		w.mu.Lock()
 		// close buffer channel
 		close(w.bufferCh)
 		w.bufferCh = nil
+		w.mu.Unlock()
 		// send signal, buffer listener is done
 		w.doneCh <- struct{}{}
 		if w.writeOptions.isDebug {
@@ -225,11 +227,11 @@ func (w *writer) runClickhouseBridge() {
 		w.writeOptions.logger.Logf("run clickhouse bridge: %s", w.view.Name)
 	}
 	defer func() {
+		w.mu.Lock()
 		// close clickhouse channel
 		close(w.clickhouseCh)
 		w.clickhouseCh = nil
 		// close errors channel if it created
-		w.mu.Lock()
 		if w.errCh != nil {
 			close(w.errCh)
 			w.errCh = nil

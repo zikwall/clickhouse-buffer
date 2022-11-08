@@ -28,6 +28,7 @@ func ExampleTableColumns() []string {
 	return []string{"id", "uuid", "insert_ts"}
 }
 
+// nolint:gochecknoglobals // it's OK
 var createTableQuery = fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id        	Int32,

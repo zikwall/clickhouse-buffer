@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
 	clickhousebuffer "github.com/zikwall/clickhouse-buffer/v4"
 	"github.com/zikwall/clickhouse-buffer/v4/example/pkg/tables"
 	"github.com/zikwall/clickhouse-buffer/v4/src/buffer/cxmem"

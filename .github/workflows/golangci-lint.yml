@@ -13,7 +13,11 @@ on:
     branches:
       - master
       - main
+      - feature/**
+      - bugfix/**
   pull_request:
+    types:
+      - opened
 jobs:
   golangci:
     name: lint

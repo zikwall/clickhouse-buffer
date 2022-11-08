@@ -102,7 +102,7 @@ func (vm RowMock) Row() cx.Vector {
 	return cx.Vector{vm.id, vm.uuid, vm.insertTS}
 }
 
-// nolint:funlen,gocyclo // it's not important here
+// nolint:funlen,gocyclo,cyclop,gocognit // cyclomatic,cognitive complexity not important here
 func TestClient(t *testing.T) {
 	tableView := cx.NewView("test_db.test_table", []string{"id", "uuid", "insert_ts"})
 	ctx, cancel := context.WithCancel(context.Background())
